@@ -1,0 +1,1436 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polymarket 临近到期预测市场看板</title>
+<style>
+  :root{
+    --bg:#0a0e13; --bg2:#0f151d; --panel:#121a24; --panel2:#16202c;
+    --line:#1f2b3a; --line2:#2a3849;
+    --txt:#dde6f2; --txt2:#93a4b8; --txt3:#6b7d92;
+    --green:#2fd08a; --green2:#1d8f5f;
+    --amber:#ffb020; --red:#ff5f5f; --blue:#4d9dff; --violet:#a98bff;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:14px; -webkit-font-smoothing:antialiased}
+  body{padding-bottom:60px}
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1560px;margin:0 auto;padding:0 20px}
+
+  header{background:linear-gradient(180deg,#101822 0%,#0a0e13 100%);border-bottom:1px solid var(--line);padding:16px 0 0}
+  .htop{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  h1{margin:0;font-size:19px;font-weight:650;letter-spacing:.2px}
+  h1 span{color:var(--green)}
+  .sub{color:var(--txt3);font-size:12.5px;margin-top:6px;line-height:1.6;max-width:760px}
+  .sub b{color:var(--txt2);font-weight:600}
+  .hmeta{font-family:var(--mono);font-size:11.5px;color:var(--txt3);text-align:right;line-height:1.7;white-space:nowrap}
+  .hmeta b{color:var(--txt2);font-weight:500}
+
+  .ctrl{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;padding:14px 0 14px;
+    border-top:1px solid rgba(255,255,255,.04);margin-top:14px}
+  .fld{display:flex;flex-direction:column;gap:5px}
+  .fld label{font-size:11px;color:var(--txt3);letter-spacing:.4px}
+  select,input[type=number],input[type=search]{
+    background:var(--panel);border:1px solid var(--line2);color:var(--txt);
+    border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit;outline:none;height:36px}
+  select:focus,input:focus{border-color:var(--blue)}
+  input[type=search]{width:190px}
+  input[type=number]{width:112px}
+  .btn{background:var(--green);color:#04120c;border:0;border-radius:7px;padding:0 16px;height:36px;
+    font-size:13px;font-weight:650;cursor:pointer;font-family:inherit;transition:.15s;
+    display:inline-flex;align-items:center;gap:7px}
+  .btn:hover{filter:brightness(1.1)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;filter:none}
+  .btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--txt2);font-weight:500}
+  .btn.ghost:hover{border-color:var(--blue);color:var(--txt)}
+  .btn.lang{min-width:56px;justify-content:center}
+  .btn.lang.on{background:rgba(47,208,138,.14);color:var(--green);border:1px solid rgba(47,208,138,.4);font-weight:600}
+  .spacer{flex:1}
+
+  .prog{height:2px;background:var(--line);position:relative;overflow:hidden;border-radius:2px}
+  .prog i{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--green);transition:width .25s}
+  .pmsg{font-size:12px;color:var(--txt3);font-family:var(--mono);padding:7px 0 0;min-height:19px}
+  .pmsg.err{color:var(--red)}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(186px,1fr));gap:12px;margin:18px 0 6px}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .kpi .k{font-size:11.5px;color:var(--txt3);letter-spacing:.3px}
+  .kpi .v{font-family:var(--mono);font-size:25px;font-weight:600;margin-top:7px;line-height:1.1;letter-spacing:-.5px}
+  .kpi .n{font-size:11.5px;color:var(--txt3);margin-top:6px;line-height:1.45}
+  .v.green{color:var(--green)} .v.amber{color:var(--amber)} .v.blue{color:var(--blue)} .v.violet{color:var(--violet)}
+
+  /* ---------- 板块 ---------- */
+  .catbar{margin:16px 0 2px}
+  .catbar h3{margin:0 0 10px;font-size:12px;color:var(--txt2);font-weight:600;letter-spacing:.3px;
+    display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .catbar h3 em{font-style:normal;color:var(--txt3);font-weight:400;font-size:11.5px}
+  .cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(136px,1fr));gap:9px}
+  .cat{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+    cursor:pointer;transition:.14s;text-align:left;font-family:inherit;color:inherit;display:block;width:100%}
+  .cat:hover{border-color:var(--line2);background:var(--panel2)}
+  .cat.on{border-color:rgba(47,208,138,.55);background:rgba(47,208,138,.07)}
+  .cat .cn{font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .cat .cn b{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--txt)}
+  .cat.on .cn b{color:var(--green)}
+  .cat .cs{font-size:10.5px;color:var(--txt3);margin-top:5px;font-family:var(--mono);line-height:1.5}
+  .cat.zero{opacity:.42}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:14px 0}
+  .panel h3{margin:0 0 12px;font-size:12px;color:var(--txt2);font-weight:600;letter-spacing:.3px;
+    display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .panel h3 em{font-style:normal;color:var(--txt3);font-weight:400;font-size:11.5px}
+  .bars{display:flex;gap:5px;align-items:flex-end;height:70px}
+  .bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px}
+  .bar i{width:100%;background:var(--line2);border-radius:3px 3px 0 0;min-height:2px;transition:.3s}
+  .bar.lit i{background:linear-gradient(180deg,var(--green),var(--green2))}
+  .bar u{font-family:var(--mono);font-size:10px;color:var(--txt3);text-decoration:none}
+  .bar span{font-family:var(--mono);font-size:10px;color:var(--txt3)}
+  .bar.lit span{color:var(--green)}
+
+  .tabs{display:flex;gap:6px;margin:18px 0 0;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+  .tab{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--txt3);
+    padding:10px 14px;font-size:13px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;transition:.15s}
+  .tab:hover{color:var(--txt)}
+  .tab.on{color:var(--txt);border-bottom-color:var(--green);font-weight:600}
+  .tab b{background:var(--panel2);border:1px solid var(--line2);border-radius:20px;padding:1px 8px;
+    font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--txt2)}
+  .tab.on b{background:rgba(47,208,138,.12);border-color:rgba(47,208,138,.35);color:var(--green)}
+
+  .hint{font-size:12px;color:var(--txt3);padding:11px 2px 13px;line-height:1.7}
+  .hint b{color:var(--txt2);font-weight:600}
+  .hint .tag{display:inline-block;border:1px solid var(--line2);border-radius:5px;padding:1px 6px;
+    font-family:var(--mono);font-size:11px;color:var(--txt2);margin:0 4px 0 0}
+
+  .tw{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:auto;max-height:calc(100vh - 190px)}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px}
+  thead th{position:sticky;top:0;z-index:2;background:var(--panel2);color:var(--txt3);
+    font-weight:500;font-size:11px;letter-spacing:.3px;text-align:right;padding:9px;white-space:nowrap;
+    border-bottom:1px solid var(--line2);cursor:pointer;user-select:none}
+  thead th:hover{color:var(--txt)}
+  thead th.l{text-align:left}
+  thead th .ar{opacity:.3;font-size:9px;margin-left:3px}
+  thead th.sorted{color:var(--green)}
+  thead th.sorted .ar{opacity:1}
+  tbody td{padding:9px 9px;border-bottom:1px solid rgba(255,255,255,.035);text-align:right;
+    font-family:var(--mono);white-space:nowrap;vertical-align:middle}
+  tbody td.l{text-align:left;font-family:inherit;white-space:normal;min-width:300px}
+  tbody tr{cursor:pointer;transition:background .1s}
+  tbody tr:hover{background:rgba(77,157,255,.06)}
+  .q{font-size:13px;line-height:1.45;color:var(--txt)}
+  .qmeta{display:flex;align-items:baseline;font-size:11px;color:var(--txt3);margin-top:4px;line-height:1.5;min-width:0}
+  .qmeta .m1{flex:none;white-space:nowrap}
+  .qmeta .m2{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-left:6px}
+  .qmeta .fav{color:var(--green);font-weight:600}
+  .qmeta .ctag{display:inline-block;border:1px solid var(--line2);border-radius:4px;padding:0 5px;
+    font-size:10px;color:var(--txt3);margin-left:6px;vertical-align:1px}
+  .qmeta .tr{opacity:.6}
+
+  .pbar{display:inline-flex;align-items:center;gap:7px;justify-content:flex-end}
+  .pbar i{display:block;width:42px;height:4px;background:var(--line2);border-radius:3px;overflow:hidden}
+  .pbar i u{display:block;height:100%;background:var(--green);text-decoration:none}
+  .pbar i u.mid{background:var(--amber)} .pbar i u.low{background:var(--red)}
+
+  .sc{display:inline-block;min-width:30px;padding:1px 5px;border-radius:4px;font-size:11.5px;
+    border:1px solid var(--line2);background:var(--panel2);color:var(--txt2)}
+  .sc.hi{color:#7ef0bb;border-color:rgba(47,208,138,.35);background:rgba(47,208,138,.1)}
+  .sc.mid{color:#ffd07a;border-color:rgba(255,176,32,.3);background:rgba(255,176,32,.08)}
+  .sc.lo{color:var(--txt3)}
+
+  .chip{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10.5px;font-family:var(--mono);
+    margin:1px 2px 1px 0;white-space:nowrap;border:1px solid}
+  .chip.g{color:#7ef0bb;border-color:rgba(47,208,138,.4);background:rgba(47,208,138,.1)}
+  .chip.a{color:#ffd07a;border-color:rgba(255,176,32,.4);background:rgba(255,176,32,.1)}
+  .chip.r{color:#ff9a9a;border-color:rgba(255,95,95,.4);background:rgba(255,95,95,.1)}
+  .chip.b{color:#9ccbff;border-color:rgba(77,157,255,.4);background:rgba(77,157,255,.1)}
+  .chip.n{color:var(--txt2);border-color:var(--line2);background:var(--panel2)}
+
+  /* ---------- 手机端卡片流 ---------- */
+  .mcards{display:none;flex-direction:column;gap:9px;margin-top:12px}
+  .mc{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:13px 14px;
+    cursor:pointer;transition:.12s}
+  .mc:active{background:var(--panel2);border-color:var(--line2)}
+  .mcq{font-size:15px;line-height:1.45;color:var(--txt);font-weight:500}
+  .mcm{font-size:11.5px;color:var(--txt3);margin-top:6px;line-height:1.5;
+    display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+  .mcm .fav{color:var(--green);font-weight:600}
+  .mcm .ctag{display:inline-block;border:1px solid var(--line2);border-radius:4px;padding:0 5px;font-size:10px}
+  .mcg{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:var(--line);
+    border-radius:8px;overflow:hidden;margin-top:11px}
+  .mcg>div{background:var(--panel);padding:8px 9px;display:flex;flex-direction:column;gap:3px;min-width:0}
+  .mcg u{text-decoration:none;font-size:9.5px;color:var(--txt3);letter-spacing:.2px;white-space:nowrap}
+  .mcg b{font-family:var(--mono);font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mcf{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px;font-size:11px;color:var(--txt3);
+    font-family:var(--mono)}
+  .mcf .sp{color:var(--line2)}
+
+  .empty{padding:56px 20px;text-align:center;color:var(--txt3);font-size:13px;line-height:2.1}
+  .empty b{color:var(--txt2)}
+  .trunc{font-size:11.5px;color:var(--txt3);padding:10px 12px;border-top:1px solid var(--line);text-align:center}
+
+  .ov{position:fixed;inset:0;background:rgba(4,7,10,.78);backdrop-filter:blur(4px);z-index:50;
+    display:none;align-items:flex-start;justify-content:center;padding:40px 20px;overflow:auto}
+  .ov.on{display:flex}
+  .modal{background:var(--bg2);border:1px solid var(--line2);border-radius:14px;max-width:880px;width:100%;
+    box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .mhead{padding:20px 24px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;
+    gap:20px;align-items:flex-start}
+  .mhead h2{margin:0;font-size:16px;line-height:1.5;font-weight:600}
+  .mhead .en{margin-top:8px;font-size:12px;color:var(--txt3);line-height:1.55}
+  .mhead .x{background:transparent;border:1px solid var(--line2);color:var(--txt2);width:30px;height:30px;
+    border-radius:7px;cursor:pointer;font-size:16px;line-height:1;flex:none}
+  .mhead .x:hover{border-color:var(--red);color:var(--red)}
+  .mbody{padding:18px 24px 24px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:18px}
+  .cell{background:var(--panel);padding:11px 13px}
+  .cell .k{font-size:10.5px;color:var(--txt3);letter-spacing:.3px}
+  .cell .v{font-family:var(--mono);font-size:15px;margin-top:5px}
+  .sect{margin-bottom:16px}
+  .sect h4{margin:0 0 8px;font-size:11.5px;color:var(--txt3);letter-spacing:.5px}
+  .desc{font-size:12.5px;line-height:1.78;color:var(--txt2);background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;padding:13px 15px;max-height:240px;overflow:auto;white-space:pre-wrap}
+  .oRow{display:flex;justify-content:space-between;gap:16px;padding:7px 12px;
+    border-bottom:1px solid rgba(255,255,255,.04);font-family:var(--mono);font-size:12px}
+  .oRow:last-child{border-bottom:0}
+  .oRow.win{background:rgba(47,208,138,.07)}
+  .oRow .on{color:var(--txt)} .oRow .op{color:var(--txt2)}
+  .oWrap{border:1px solid var(--line);border-radius:8px;overflow:hidden;max-height:260px;overflow-y:auto}
+  .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .acts a{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:7px;
+    padding:8px 13px;font-size:12.5px;color:var(--txt2)}
+  .acts a:hover{border-color:var(--blue);color:var(--txt);text-decoration:none}
+  .warnbox{border:1px solid rgba(255,176,32,.28);background:rgba(255,176,32,.06);border-radius:8px;
+    padding:12px 14px;font-size:12px;line-height:1.75;color:#ffcf8a}
+  .warnbox b{color:var(--amber)}
+  .tnote{font-size:10.5px;color:var(--txt3);margin-left:8px;font-weight:400;letter-spacing:0}
+
+  footer{border-top:1px solid var(--line);margin-top:36px;padding:20px 0;font-size:11.5px;color:var(--txt3);line-height:1.85}
+  footer b{color:var(--txt2)}
+  code{font-family:var(--mono);font-size:11px;background:var(--panel);padding:1px 5px;border-radius:4px}
+  @media(max-width:900px){
+    .hmeta{text-align:left}
+    tbody td.l{min-width:240px}
+    .tw{max-height:none}
+  }
+
+  /* ============ 手机 / 窄屏 ============ */
+  @media(max-width:820px){
+    .wrap{padding:0 12px}
+    h1{font-size:17px;line-height:1.35}
+    .sub{display:none}
+    .htop{gap:8px}
+    .hmeta{font-size:10.5px;line-height:1.6}
+    .ctrl{gap:9px;padding:12px 0 10px}
+    .fld{flex:1 1 calc(50% - 5px);min-width:0}
+    .fld label{font-size:10.5px}
+    .fld select,.fld input{width:100%;height:40px;font-size:14px}
+    .btn{height:40px;font-size:13px;padding:0 12px;flex:1 1 auto;justify-content:center}
+    .spacer{display:none}
+    .prog{margin-top:4px}
+
+    .kpis{grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 4px}
+    .kpi{padding:10px 12px}
+    .kpi .k{font-size:10.5px;line-height:1.35}
+    .kpi .v{font-size:20px;margin-top:5px}
+    .kpi .n{display:none}
+    .kpi.opt{display:none}
+
+    .catbar{margin:12px 0 0}
+    .catbar h3{font-size:11.5px;margin-bottom:8px}
+    .catbar h3 em{display:none}
+    .cats{grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:7px}
+    .cat{padding:9px 10px;border-radius:8px}
+    .cat .cn{font-size:12px;gap:4px}
+    .cat .cn b{font-size:15px}
+    .cat .cs{font-size:9.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+    .panel{padding:11px 12px;margin:11px 0}
+    .panel h3{font-size:11.5px;margin-bottom:9px}
+    .panel h3 em{display:none}
+    .bars{height:56px;gap:4px}
+    .bar u,.bar span{font-size:9px}
+
+    .tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;
+      scrollbar-width:none;margin-top:12px}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{white-space:nowrap;padding:10px 11px;font-size:12.5px;gap:6px}
+    .hint{font-size:11.5px;padding:9px 0 10px;line-height:1.65}
+
+    /* 表格隐藏，改用卡片流 */
+    .tw{background:transparent;border:0;overflow:visible;max-height:none;border-radius:0}
+    table{display:none}
+    .mcards{display:flex}
+    .trunc{background:var(--panel);border:1px solid var(--line);border-radius:9px;margin-top:9px}
+
+    .ov{padding:0}
+    .modal{max-width:100%;border-radius:0;border:0;min-height:100vh}
+    .mhead{padding:16px 14px 12px}
+    .mhead h2{font-size:15px}
+    .mbody{padding:14px}
+    .grid{grid-template-columns:1fr 1fr}
+    .cell .v{font-size:13.5px}
+    .desc{font-size:12px;max-height:200px}
+    .sect h4{font-size:11px}
+    .acts a{flex:1 1 auto;justify-content:center}
+    footer{font-size:10.5px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="htop">
+      <div>
+        <h1>Polymarket <span>临近到期</span>预测市场看板</h1>
+        <div class="sub">
+          直接调用 Polymarket 公开 API，筛出「快到期」的市场，按 <b>板块</b> 与 <b>确定度 / 剩余时间 / 流动性</b> 分组浏览。
+          要抓的是那种状态：<b>结果大概率已经定了</b>（价格贴近 0 或 1），但 <b>市场还没完全走到位</b>（价差、深度、结算延迟留下缝隙）。
+        </div>
+      </div>
+      <div class="hmeta">
+        数据源 <b>gamma-api.polymarket.com</b><br>
+        抓取时间 <b id="ts">—</b><br>
+        覆盖市场 <b id="cov">—</b>
+      </div>
+    </div>
+
+    <div class="ctrl">
+      <div class="fld">
+        <label>到期窗口</label>
+        <select id="fDays">
+          <option value="1">24 小时内</option>
+          <option value="3">3 天内</option>
+          <option value="7" selected>7 天内</option>
+          <option value="14">14 天内</option>
+          <option value="30">30 天内</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>最低流动性 (USDC)</label>
+        <input type="number" id="fLiq" value="2000" min="0" step="500">
+      </div>
+      <div class="fld">
+        <label>确定度下限</label>
+        <select id="fProb">
+          <option value="0.85">≥ 85%</option>
+          <option value="0.90" selected>≥ 90%</option>
+          <option value="0.95">≥ 95%</option>
+          <option value="0.97">≥ 97%</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>剩余时间下限</label>
+        <select id="fRemain">
+          <option value="0">不限（含滚球盘）</option>
+          <option value="0.25">≥ 15 分钟</option>
+          <option value="2" selected>≥ 2 小时</option>
+          <option value="6">≥ 6 小时</option>
+          <option value="24">≥ 1 天</option>
+        </select>
+      </div>
+      <div class="fld">
+        <label>搜索（中英文都行）</label>
+        <input type="search" id="fQ" placeholder="如 比特币 / fed">
+      </div>
+      <button class="btn lang on" id="btnLang" title="切换中文 / 英文原文">中文</button>
+      <button class="btn" id="btnRefresh">↻ 刷新数据</button>
+      <button class="btn ghost" id="btnCsv">导出 CSV</button>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="prog"><i id="progBar"></i></div>
+    <div class="pmsg" id="progMsg"></div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="kpis" id="kpis"></section>
+
+  <div class="catbar">
+    <h3>
+      <span>板块</span>
+      <em>点卡片只看这个板块，再点一次取消 · 数字 = 市场数，下面一行是「其中高确定数 / 中位年化」</em>
+    </h3>
+    <div class="cats" id="cats"></div>
+  </div>
+
+  <div class="panel">
+    <h3><span>确定度分布</span><em>当前板块内、未过期市场中最可能结果的当前价格</em></h3>
+    <div class="bars" id="dist"></div>
+  </div>
+
+  <nav class="tabs" id="tabs"></nav>
+  <div class="hint" id="hint"></div>
+
+  <div class="tw">
+    <table>
+      <thead id="thead"></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty" style="display:none"></div>
+    <div class="trunc" id="trunc" style="display:none"></div>
+  </div>
+
+  <div class="mcards" id="mcards"></div>
+
+  <footer>
+    <b>关于「可操作分」：</b>纯启发式的可执行性打分，只衡量「能不能顺利完成一次买入、剩余时间是否够用、盘口是否承接得住」，
+    <b>不代表胜率、不代表期望收益、更不是买入信号</b>。它的作用是把「6 分钟后结束的滚球盘」「深不见底的冷门盘」压到列表底部。<br>
+    <b>关于中文翻译：</b>标题由免费机翻接口实时翻译（<code>clients5.google.com</code>），首次加载会慢几秒，
+    译文缓存在本机、下次秒开。<b>仅供快速浏览，人名/队名/术语可能翻错</b>——下单前以英文原题为准
+    （鼠标悬停标题可见英文，点开详情有中英对照）。翻译接口不可用时会自动切回英文，不影响筛选。点右上角「中文」可切原文。<br>
+    <b>关于板块：</b>按关键词规则自动归类，一个市场只进一个板块，边界模糊的会落到「其他」，属于辅助浏览，不是 Polymarket 官方分类。<br>
+    <b>数据说明：</b>价格为 Polymarket 订单簿中间价（有缓存延迟，非实时撮合价），下单前请以官网盘口为准。
+    本页是公开数据的整理与筛选工具，<b>不构成投资建议</b>；预测市场存在规则解释、结算争议与归零风险。<br>
+    <b>接口：</b><code>GET /markets?closed=false&amp;active=true&amp;end_date_min=…&amp;liquidity_num_min=…&amp;order=volume24hr&amp;limit=100&amp;offset=N</code>（单页上限 100，本页并发拉取多页后合并去重）
+  </footer>
+</main>
+
+<div class="ov" id="ov"><div class="modal" id="modal"></div></div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   常量
+   ========================================================= */
+const API = "https://gamma-api.polymarket.com/markets";
+const TRAPI = "https://clients5.google.com/translate_a/t";
+const PAGE = 100;
+const DAY = 86400000;
+const MAXROWS = 400;
+const TR_CACHE_KEY = "pm_tr_zh_v2";
+
+const CATS = [
+  { k: "sports",   zh: "体育" },
+  { k: "crypto",   zh: "加密" },
+  { k: "politics", zh: "政治选举" },
+  { k: "geo",      zh: "地缘冲突" },
+  { k: "econ",     zh: "经济股市" },
+  { k: "culture",  zh: "文化娱乐" },
+  { k: "tech",     zh: "科技" },
+  { k: "weather",  zh: "天气" },
+  { k: "other",    zh: "其他" }
+];
+const CAT_ZH = {};
+CATS.forEach((c) => { CAT_ZH[c.k] = c.zh; });
+
+const S = {
+  days: 7,
+  minLiq: 2000,
+  minProb: 0.90,
+  minRemain: 2,
+  query: "",
+  cat: "all",
+  raw: [],
+  rows: [],
+  view: [],
+  current: null,
+  bucket: "A",
+  sort: { key: "score", dir: -1 },
+  loading: false,
+  fetchedAt: null,
+  errors: []
+};
+
+/* =========================================================
+   工具
+   ========================================================= */
+const $ = (id) => document.getElementById(id);
+
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
+function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+function fmtMoney(n) {
+  n = num(n);
+  if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + "k";
+  return n.toFixed(0);
+}
+function fmtPct(p, d) {
+  if (p == null || !Number.isFinite(p)) return "—";
+  return (p * 100).toFixed(d == null ? 1 : d) + "%";
+}
+function fmtPrice(p) { return p == null ? "—" : (p >= 0.99 ? p.toFixed(4) : p.toFixed(3)); }
+function fmtLeft(days) {
+  if (days == null || !Number.isFinite(days)) return "—";
+  const a = Math.abs(days);
+  let t;
+  if (a < 1 / 24) t = Math.max(1, Math.round(a * 1440)) + " 分";
+  else if (a < 1) t = (a * 24).toFixed(1) + " 时";
+  else if (a < 10) t = a.toFixed(1) + " 天";
+  else t = Math.round(a) + " 天";
+  return days < 0 ? "过期 " + t : t;
+}
+function ymd(d) { return d.toISOString().slice(0, 10); }
+function addDays(d, n) { return new Date(d.getTime() + n * DAY); }
+
+/* =========================================================
+   翻译层：批量 + localStorage 缓存 + 失败降级
+   ========================================================= */
+const TR = {
+  on: true,
+  mem: new Map(),
+  inflight: new Set(),
+  failed: new Set(),
+  off: false,
+  streak: 0,
+  saveTimer: null,
+  refreshTimer: null,
+
+  load() {
+    try {
+      const raw = localStorage.getItem(TR_CACHE_KEY);
+      if (!raw) return;
+      const o = JSON.parse(raw);
+      Object.keys(o).forEach((k) => { if (typeof o[k] === "string") TR.mem.set(k, o[k]); });
+    } catch (e) { /* 无 localStorage 就只做内存缓存 */ }
+  },
+  save() {
+    if (TR.saveTimer) return;
+    TR.saveTimer = setTimeout(() => {
+      TR.saveTimer = null;
+      try {
+        const keys = Array.from(TR.mem.keys());
+        if (keys.length > 3000) keys.slice(0, keys.length - 3000).forEach((k) => TR.mem.delete(k));
+        const o = {};
+        TR.mem.forEach((v, k) => { o[k] = v; });
+        localStorage.setItem(TR_CACHE_KEY, JSON.stringify(o));
+      } catch (e) { /* 配额满就放弃持久化 */ }
+    }, 1500);
+  },
+  get(s) { return s ? TR.mem.get(s) : null; }
+};
+
+function hasZh(s) { return !!(s && TR.on && TR.mem.get(s)); }
+
+const FIXED_OUT = { "Yes": "是", "No": "否", "Over": "高于", "Under": "低于", "Other": "其他" };
+function zhOutcome(label) {
+  if (!TR.on) return label;
+  if (FIXED_OUT[label]) return FIXED_OUT[label];
+  return TR.mem.get(label) || label;
+}
+
+async function trBatchSafe(list) {
+  try {
+    return await trBatch(list);
+  } catch (e) {
+    if (list.length > 1) {
+      const mid = Math.ceil(list.length / 2);
+      const a = await trBatchSafe(list.slice(0, mid));
+      const b = await trBatchSafe(list.slice(mid));
+      return a.concat(b);
+    }
+    throw e;
+  }
+}
+
+async function trBatch(list) {
+  const url = new URL(TRAPI);
+  url.searchParams.set("client", "dict-chrome-ex");
+  url.searchParams.set("sl", "en");
+  url.searchParams.set("tl", "zh-CN");
+  list.forEach((s) => url.searchParams.append("q", s));
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 20000);
+  try {
+    const r = await fetch(url.toString(), { signal: ctl.signal });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    if (!Array.isArray(j) || j.length !== list.length) throw new Error("batch mismatch");
+    return j.map((x) => (typeof x === "string" && x.trim() ? x : null));
+  } finally { clearTimeout(timer); }
+}
+
+function scheduleBodyRefresh() {
+  if (TR.refreshTimer) return;
+  TR.refreshTimer = setTimeout(() => {
+    TR.refreshTimer = null;
+    renderBody();
+    if (S.current && $("ov").classList.contains("on")) openModal(S.current, true);
+  }, 260);
+}
+
+async function kickTranslateOnce() {
+  if (!TR.on || TR.off) return;
+  const want = [];
+  const seen = new Set();
+  const push = (s) => {
+    if (!s || s.length < 2) return;
+    if (seen.has(s) || TR.mem.has(s) || TR.failed.has(s) || TR.inflight.has(s)) return;
+    seen.add(s); want.push(s);
+  };
+  for (const r of S.view) {
+    push(r.question);
+    push(r.sub);
+    push(r.eventTitle);
+  }
+  if (!want.length) return;
+
+  const take = want.slice(0, 400);
+  take.forEach((s) => TR.inflight.add(s));
+  const batches = [];
+  for (let i = 0; i < take.length; i += 18) batches.push(take.slice(i, i + 18));
+
+  let cursor = 0;
+  async function worker() {
+    while (cursor < batches.length) {
+      const b = batches[cursor++];
+      try {
+        const out = await trBatchSafe(b);
+        const miss = [];
+        b.forEach((s, i) => {
+          TR.inflight.delete(s);
+          if (out[i]) TR.mem.set(s, out[i]);
+          else miss.push(s);
+        });
+        for (const s of miss) {              // 批次里个别漏翻的，单条补一次
+          try {
+            const one = await trBatch([s]);
+            if (one[0]) TR.mem.set(s, one[0]); else TR.failed.add(s);
+          } catch (e2) { TR.failed.add(s); }
+        }
+        TR.streak = 0;
+        TR.save();
+        scheduleBodyRefresh();
+      } catch (e) {
+        b.forEach((s) => { TR.inflight.delete(s); TR.failed.add(s); });
+        TR.streak++;
+        if (TR.streak >= 4 && !TR.off) {
+          TR.off = true;
+          $("btnLang").textContent = "原文";
+          $("btnLang").title = "翻译接口暂不可用，已切回英文原文";
+          setProgress(1, "翻译接口暂不可用，已保留英文原文（筛选功能不受影响）", true);
+        }
+      }
+    }
+  }
+  await Promise.all([worker(), worker(), worker()]);
+}
+
+/* 多轮补翻：每次只翻译一批，翻完再补下一批，直到可见行都有译文 */
+let trBusy = false;
+async function kickTranslate() {
+  if (!TR.on || TR.off || trBusy) return;
+  trBusy = true;
+  try {
+    for (let round = 0; round < 6; round++) {
+      if (TR.off || !TR.on) break;
+      const before = TR.mem.size;
+      const needBefore = S.view.filter((r) => r.question && !TR.mem.get(r.question) && !TR.failed.has(r.question)).length;
+      if (needBefore === 0) break;
+      await kickTranslateOnce();
+      const needAfter = S.view.filter((r) => r.question && !TR.mem.get(r.question) && !TR.failed.has(r.question)).length;
+      if (needAfter === 0) break;
+      if (TR.mem.size === before) break;   // 没进展就停，避免空转
+    }
+  } finally {
+    trBusy = false;
+  }
+}
+
+/* =========================================================
+   抓取
+   ========================================================= */
+function buildTasks(days, minLiq) {
+  const now = new Date();
+  const from = ymd(now);
+  const to = ymd(addDays(now, days));
+  const base = { closed: "false", active: "true", limit: String(PAGE), liquidity_num_min: String(minLiq) };
+  const tasks = [];
+  for (let i = 0; i < 8; i++) {
+    tasks.push(Object.assign({}, base, {
+      offset: String(i * PAGE), order: "volume24hr", ascending: "false",
+      end_date_min: from, end_date_max: to
+    }));
+  }
+  for (let i = 0; i < 4; i++) {
+    tasks.push(Object.assign({}, base, {
+      offset: String(i * PAGE), order: "liquidity", ascending: "false",
+      end_date_min: from, end_date_max: to
+    }));
+  }
+  for (let i = 0; i < 4; i++) {
+    tasks.push(Object.assign({}, base, {
+      offset: String(i * PAGE), order: "volume24hr", ascending: "false",
+      end_date_max: ymd(addDays(now, -1))
+    }));
+  }
+  return tasks;
+}
+
+function urlOf(p) {
+  const sp = new URLSearchParams();
+  Object.keys(p).forEach((k) => sp.set(k, p[k]));
+  return API + "?" + sp.toString();
+}
+
+async function getJSON(url, retry) {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 25000);
+  try {
+    const r = await fetch(url, { signal: ctl.signal, headers: { Accept: "application/json" } });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return await r.json();
+  } catch (e) {
+    if (retry > 0) {
+      await new Promise((ok) => setTimeout(ok, 500));
+      return getJSON(url, retry - 1);
+    }
+    throw e;
+  } finally { clearTimeout(timer); }
+}
+
+function setProgress(ratio, msg, isErr) {
+  $("progBar").style.width = Math.round(clamp01(ratio) * 100) + "%";
+  const el = $("progMsg");
+  el.textContent = msg || "";
+  el.className = "pmsg" + (isErr ? " err" : "");
+}
+
+async function loadData() {
+  if (S.loading) return;
+  S.loading = true;
+  S.errors = [];
+  $("btnRefresh").disabled = true;
+  $("btnRefresh").textContent = "加载中…";
+
+  const tasks = buildTasks(S.days, S.minLiq);
+  let done = 0;
+  setProgress(0, "正在并发拉取 " + tasks.length + " 页公开数据…");
+
+  const results = new Array(tasks.length).fill(null);
+  let cursor = 0;
+  async function worker() {
+    while (cursor < tasks.length) {
+      const i = cursor++;
+      try { results[i] = await getJSON(urlOf(tasks[i]), 1); }
+      catch (e) { results[i] = null; S.errors.push(e && e.message ? e.message : String(e)); }
+      done++;
+      setProgress(done / tasks.length, "已加载 " + done + " / " + tasks.length + " 页…");
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(5, tasks.length) }, worker));
+
+  const map = new Map();
+  let pages = 0;
+  results.forEach((arr) => {
+    if (!Array.isArray(arr)) return;
+    pages++;
+    arr.forEach((m) => { if (m && m.id && !map.has(m.id)) map.set(m.id, m); });
+  });
+
+  S.raw = Array.from(map.values());
+  S.fetchedAt = new Date();
+  S.rows = S.raw.map(parseMarket).filter(Boolean);
+
+  S.loading = false;
+  $("btnRefresh").disabled = false;
+  $("btnRefresh").textContent = "↻ 刷新数据";
+
+  const errTxt = S.errors.length ? "；" + S.errors.length + " 页失败（" + S.errors[0] + "）" : "";
+  setProgress(1, "完成：" + pages + " 页 / " + S.rows.length + " 个市场" + errTxt, S.errors.length > 0);
+  render();
+  kickTranslate();
+}
+
+/* =========================================================
+   板块归类（关键词规则）
+   ========================================================= */
+const RULES = [
+  ["weather", /temperature|weather|hurricane|typhoon|rainfall|\bsnow\b|°c|celsius|fahrenheit|tornado|flood|heat wave/],
+  ["crypto", /bitcoin|\bbtc\b|ethereum|\beth\b|solana|\bxrp\b|dogecoin|memecoin|crypto|altcoin|stablecoin|defi|\bnft\b|coinbase|binance|microstrategy|satoshi|blockchain/],
+  ["sports", /\bvs\.?\s|moneyline|exact score|\bnba\b|\bnfl\b|\bmlb\b|\bnhl\b|\bufc\b|\bmls\b|premier league|champions league|la liga|serie a|bundesliga|ligue 1|tennis|grand prix|formula 1|\bgolf\b|boxing|wimbledon|ballon d'or|world cup|olympic|playoff|goalscorer|shots on|rebounds|assists|touchdown|home run|strikeout|win on \d{4}-\d{2}-\d{2}|map winner|\bbo\d\b|cricket|rugby|handball|open:/],
+  ["culture", /movie|film|box office|oscar|grammy|emmy|album|billboard|netflix|celebrity|taylor swift|eurovision|anime|\bbook\b|novel|youtube|tiktok|instagram|influencer|\bsong\b/],
+  ["geo", /ceasefire|\bwar\b|invasion|missile|airstrike|nuclear|nato|sanctions|military|troops|hostage|terror|annex|coup|border clash/],
+  ["politics", /election|president|prime minister|senate|congress|\bhouse\b|governor|mayor|parliament|referendum|\bvote|poll|nominee|cabinet|impeach|democrat|republican|labour|conservative|coalition|seats|minister/],
+  ["econ", /\bfed\b|fomc|interest rate|rate cut|rate hike|key rate|\bcpi\b|inflation|\bgdp\b|unemployment|recession|jobs report|treasury|s&p|nasdaq|dow jones|gold|crude|\bopec\b|earnings|\bipo\b|tariff|bond|central bank/],
+  ["tech", /\bai\b|openai|\bgpt|anthropic|claude|gemini|apple|google|microsoft|tesla|spacex|starship|nvidia|chatgpt|robot|semiconductor|chip/]
+];
+
+function catOf(m, ev) {
+  const hay = [
+    m.question, m.groupItemTitle, m.slug,
+    ev && ev.title, ev && ev.slug, ev && ev.seriesSlug
+  ].filter(Boolean).join(" ").toLowerCase();
+  for (let i = 0; i < RULES.length; i++) if (RULES[i][1].test(hay)) return RULES[i][0];
+  return "other";
+}
+
+/* =========================================================
+   解析 / 打分
+   ========================================================= */
+function parseMarket(m) {
+  let outcomes = [], prices = [];
+  try { outcomes = JSON.parse(m.outcomes || "[]"); } catch (e) { return null; }
+  try { prices = JSON.parse(m.outcomePrices || "[]").map(Number); } catch (e) { return null; }
+  if (!Array.isArray(outcomes) || !Array.isArray(prices)) return null;
+  if (!prices.length || prices.length !== outcomes.length) return null;
+  if (!prices.every((x) => Number.isFinite(x))) return null;
+
+  let idx = 0;
+  for (let i = 1; i < prices.length; i++) if (prices[i] > prices[idx]) idx = i;
+
+  const pFav = prices[idx];
+  const favLabel = outcomes[idx] == null ? "—" : String(outcomes[idx]);
+
+  const end = m.endDate ? new Date(m.endDate) : null;
+  const okEnd = end && !isNaN(end.getTime());
+  const daysLeft = okEnd ? (end.getTime() - Date.now()) / DAY : null;
+
+  const spread = Math.abs(num(m.spread));
+  const cost = Math.min(0.9999, Math.max(0.0001, pFav + spread / 2));
+  const gross = 1 / cost - 1;
+  const ann = (daysLeft != null && daysLeft > 0.003) ? gross * (365 / daysLeft) * 100 : null;
+
+  let chg = num(m.oneDayPriceChange);
+  if (prices.length === 2 && idx === 1) chg = -chg;
+
+  const ev = (m.events && m.events[0]) || null;
+  const evSlug = ev && ev.slug ? ev.slug : null;
+  const link = evSlug ? "https://polymarket.com/event/" + evSlug
+    : "https://polymarket.com/market/" + (m.slug || "");
+
+  let uma = [];
+  try { uma = JSON.parse(m.umaResolutionStatuses || "[]"); } catch (e) { uma = []; }
+  if (!Array.isArray(uma)) uma = [];
+  const disputed = uma.some((u) => String(u).toLowerCase().indexOf("disput") >= 0);
+
+  const liq = num(m.liquidityNum != null ? m.liquidityNum : m.liquidity);
+  const vol24 = num(m.volume24hr != null ? m.volume24hr : m.volume24hrClob);
+  const volAll = num(m.volumeNum != null ? m.volumeNum : m.volume);
+  const tradeable = m.acceptingOrders !== false;
+
+  const tags = [];
+  if (!tradeable) tags.push(["r", "已停止接单"]);
+  if (cost >= 0.999) tags.push(["n", "无收益空间"]);
+  if (daysLeft != null && daysLeft < 0) tags.push(["a", "已过期"]);
+  if (prices.length > 2) tags.push(["n", prices.length + " 个结果"]);
+  if (disputed) tags.push(["r", "UMA 争议中"]);
+  else if (uma.length) tags.push(["b", "UMA 处理中"]);
+  if (spread >= 0.03) tags.push(["r", "价差 " + fmtPct(spread, 0)]);
+  else if (spread >= 0.015) tags.push(["a", "价差 " + fmtPct(spread, 1)]);
+  if (liq < 8000) tags.push(["r", "深度薄"]);
+  if (Math.abs(chg) >= 0.10) tags.push(["b", "24h 剧变"]);
+
+  const r = {
+    id: m.id,
+    question: m.question || "",
+    sub: m.groupItemTitle || "",
+    eventTitle: ev && ev.title ? ev.title : "",
+    eventSlug: evSlug,
+    link: link,
+    outcomes: outcomes.map(String),
+    prices: prices,
+    favIdx: idx,
+    favLabel: favLabel,
+    pFav: pFav,
+    nOut: prices.length,
+    endDate: okEnd ? end : null,
+    daysLeft: daysLeft,
+    spread: spread,
+    cost: cost,
+    gross: gross,
+    yld: gross * 100,
+    ann: ann,
+    chg: chg,
+    liq: liq,
+    vol24: vol24,
+    volAll: volAll,
+    tradeable: tradeable,
+    uma: uma,
+    disputed: disputed,
+    desc: m.description || "",
+    resSrc: m.resolutionSource || "",
+    cat: catOf(m, ev),
+    tags: tags
+  };
+  r.score = scoreOf(r);
+  return r;
+}
+
+/* 可操作性分：只衡量「能不能顺利下单 + 时间够不够」，与胜率无关 */
+function scoreOf(r) {
+  const prob = clamp01((r.pFav - 0.85) / 0.14);
+  let time = 0.15;
+  if (r.daysLeft != null) {
+    const h = r.daysLeft * 24;
+    if (h <= 0) time = 0.85;
+    else if (h < 0.5) time = 0.05;
+    else if (h < 12) time = 0.05 + 0.95 * (h - 0.5) / 11.5;
+    else if (h <= 72) time = 1;
+    else if (h <= 168) time = 1 - 0.7 * (h - 72) / 96;
+    else time = 0.25;
+  }
+  const liq = clamp01((Math.log10(Math.max(1, r.liq)) - 3) / 2.5);
+  const spr = clamp01(1 - r.spread / 0.03);
+  const yld = r.ann == null ? 0.3 : clamp01((Math.log10(Math.max(1, r.ann)) - 1) / 2);
+  return 100 * (0.35 * prob + 0.25 * time + 0.20 * liq + 0.10 * spr + 0.10 * yld);
+}
+
+/* =========================================================
+   分桶 / 过滤
+   ========================================================= */
+function bucketOf(r) {
+  const d = r.daysLeft;
+  if (d == null) return "D";
+  if (d < 0) return (r.cost < 0.999 && d >= -14) ? "B" : "D";
+  if (r.pFav >= S.minProb && r.cost < 0.999) return "A";
+  if (r.pFav >= 0.60 && r.pFav < S.minProb && (Math.abs(r.chg) >= 0.04 || r.spread >= 0.02)) return "C";
+  return "D";
+}
+
+function baseFilter(r, ignoreCat) {
+  if (!ignoreCat && S.cat !== "all" && r.cat !== S.cat) return false;
+  if (r.daysLeft != null && r.daysLeft >= 0 && r.daysLeft * 24 < S.minRemain) return false;
+  const q = S.query.trim().toLowerCase();
+  if (q) {
+    const hay = [
+      r.question, r.sub, r.eventTitle,
+      TR.mem.get(r.question) || "", TR.mem.get(r.eventTitle) || "",
+      CAT_ZH[r.cat] || ""
+    ].join(" ").toLowerCase();
+    if (hay.indexOf(q) < 0) return false;
+  }
+  return true;
+}
+
+function bucketCounts() {
+  const c = { A: 0, B: 0, C: 0, D: 0 };
+  for (const r of S.rows) {
+    if (!baseFilter(r)) continue;
+    c[bucketOf(r)]++;
+  }
+  return c;
+}
+
+function visibleRows() {
+  const rows = S.rows.filter((r) => {
+    if (!baseFilter(r)) return false;
+    return S.bucket === "D" ? true : bucketOf(r) === S.bucket;
+  });
+  const k = S.sort.key, dir = S.sort.dir;
+  rows.sort((a, b) => {
+    if (k === "question") {
+      const x = (TR.mem.get(a.question) || a.question).toLowerCase();
+      const y = (TR.mem.get(b.question) || b.question).toLowerCase();
+      return x < y ? -dir : x > y ? dir : 0;
+    }
+    const x = a[k], y = b[k];
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    return (x - y) * dir;
+  });
+  return rows;
+}
+
+/* =========================================================
+   渲染
+   ========================================================= */
+const COLS = [
+  { key: "question", label: "市场 / 被看好的一方", l: true },
+  { key: "score", label: "可操作分", hint: "启发式可执行性评分，非胜率、非收益预期" },
+  { key: "pFav", label: "确定度" },
+  { key: "daysLeft", label: "剩余/过期" },
+  { key: "cost", label: "买价估算" },
+  { key: "yld", label: "到期收益" },
+  { key: "ann", label: "年化(估)" },
+  { key: "chg", label: "24hΔ(pp)" },
+  { key: "spread", label: "价差" },
+  { key: "vol24", label: "24h 成交" },
+  { key: "liq", label: "流动性" },
+  { key: "tags", label: "信号", l: true, sortable: false }
+];
+
+function render() {
+  $("ts").textContent = S.fetchedAt ? S.fetchedAt.toLocaleString("zh-CN", { hour12: false }) : "—";
+  $("cov").textContent = S.rows.length ? S.rows.length + " 个" : "—";
+  renderKpis();
+  renderCats();
+  renderDist();
+  renderTabs();
+  renderHint();
+  renderHead();
+  renderBody();
+}
+
+function renderKpis() {
+  const rows = S.rows.filter((r) => baseFilter(r));
+  const A = rows.filter((r) => bucketOf(r) === "A");
+  const B = rows.filter((r) => bucketOf(r) === "B");
+  const C = rows.filter((r) => bucketOf(r) === "C");
+  const anns = A.map((r) => r.ann).filter((v) => v != null && Number.isFinite(v)).sort((a, b) => a - b);
+  const med = anns.length ? anns[Math.floor(anns.length / 2)] : null;
+  const deep = A.filter((r) => r.liq >= 50000).length;
+  const thin = A.filter((r) => r.pFav >= 0.97).length;
+  const scope = S.cat === "all" ? "" : "（" + CAT_ZH[S.cat] + "）";
+
+  const cards = [
+    { k: "① 高确定 · 未到期" + scope, v: A.length, cls: "green", 
+      n: "确定度 ≥ " + fmtPct(S.minProb, 0) + "，且 " + S.days + " 天内到期" },
+    { k: "其中 ≥97%（超额极薄）", v: thin, cls: "blue", opt: 1,
+      n: "年化看着高，但赢 1 次只赚 3%，输 1 次亏 97%" },
+    { k: "流动性 ≥5 万（真能进场）", v: deep, cls: "violet",
+      n: "看得到价格 ≠ 买得到量，这一格才接近可执行" },
+    { k: "② 已过期 · 待结算", v: B.length, cls: "amber",
+      n: "截止时间已过仍未结算，最接近「结果已定」的池子" },
+    { k: "中位年化（① 桶）", v: med == null ? "—" : Math.round(med) + "%", cls: "green", opt: 1,
+      n: "＝(1/买价−1)×365/剩余天数，不是预期收益" },
+    { k: "③ 定价滞后候选", v: C.length, cls: "amber",
+      n: "60–90% 区间里有大波动或宽价差，需人工核对" }
+  ];
+
+  $("kpis").innerHTML = cards.map((c) =>
+    '<div class="kpi' + (c.opt ? " opt" : "") + '"><div class="k">' + esc(c.k) + '</div>' +
+    '<div class="v ' + c.cls + '">' + esc(String(c.v)) + '</div>' +
+    '<div class="n">' + esc(c.n) + '</div></div>'
+  ).join("");
+}
+
+function renderCats() {
+  const per = {};
+  CATS.forEach((c) => { per[c.k] = { n: 0, a: 0, anns: [] }; });
+  let allN = 0, allA = 0;
+  const allAnns = [];
+
+  S.rows.forEach((r) => {
+    if (!baseFilter(r, true)) return;
+    allN++;
+    const p = per[r.cat];
+    if (p) p.n++;
+    if (bucketOf(r) === "A") {
+      allA++;
+      if (p) p.a++;
+      if (r.ann != null && Number.isFinite(r.ann)) { allAnns.push(r.ann); if (p) p.anns.push(r.ann); }
+    }
+  });
+
+  const med = (arr) => {
+    if (!arr.length) return null;
+    const s = arr.slice().sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  };
+
+  const cards = [{ k: "all", zh: "全部板块", n: allN, a: allA, med: med(allAnns) }]
+    .concat(CATS.map((c) => {
+      const p = per[c.k];
+      return { k: c.k, zh: c.zh, n: p.n, a: p.a, med: med(p.anns) };
+    }));
+
+  $("cats").innerHTML = cards.map((c) => {
+    const on = S.cat === c.k ? " on" : "";
+    const z = c.n === 0 ? " zero" : "";
+    const sub = "高确定 " + c.a + (c.med == null ? "" : " · 年化 " + Math.round(c.med) + "%");
+    return '<button class="cat' + on + z + '" data-c="' + c.k + '" title="点击只看「' + esc(c.zh) + '」">' +
+      '<span class="cn">' + esc(c.zh) + "<b>" + c.n + "</b></span>" +
+      '<span class="cs">' + esc(sub) + "</span></button>";
+  }).join("");
+}
+
+function renderDist() {
+  const edges = [0, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0001];
+  const labels = ["<50", "50-60", "60-70", "70-80", "80-90", "90-95", "95-99", "≥99"];
+  const counts = new Array(8).fill(0);
+  S.rows.forEach((r) => {
+    if (!baseFilter(r)) return;
+    if (r.daysLeft == null || r.daysLeft < 0) return;
+    for (let i = 0; i < 8; i++) {
+      if (r.pFav >= edges[i] && r.pFav < edges[i + 1]) { counts[i]++; break; }
+    }
+  });
+  const max = Math.max(1, ...counts);
+  $("dist").innerHTML = counts.map((c, i) => {
+    const h = Math.round((c / max) * 56) + 2;
+    const lit = edges[i] >= S.minProb ? " lit" : "";
+    return '<div class="bar' + lit + '"><u>' + c + '</u>' +
+      '<i style="height:' + h + 'px"></i><span>' + labels[i] + '</span></div>';
+  }).join("");
+}
+
+function renderTabs() {
+  const cnt = bucketCounts();
+  const tabs = [
+    { id: "A", t: "① 近到期 · 高确定" },
+    { id: "B", t: "② 已过期 · 待结算" },
+    { id: "C", t: "③ 定价滞后候选" },
+    { id: "D", t: "全部" }
+  ];
+  $("tabs").innerHTML = tabs.map((t) =>
+    '<button class="tab' + (S.bucket === t.id ? " on" : "") + '" data-b="' + t.id + '">' +
+    esc(t.t) + "<b>" + cnt[t.id] + "</b></button>"
+  ).join("");
+}
+
+function renderHint() {
+  const catName = S.cat === "all" ? "全部板块" : CAT_ZH[S.cat];
+  const map = {
+    A: "<b>① 近到期 · 高确定</b>：价格已到 " + fmtPct(S.minProb, 0) + " 以上、还没到期。这里比的不是谁更准，而是" +
+       "<b>「补偿够不够覆盖尾部风险」</b>——买 0.98 赢 2%，错一次亏 98，要连对 49 次才回本。" +
+       "优先看 <span class=tag>流动性</span><span class=tag>价差</span>。",
+    B: "<b>② 已过期 · 待结算</b>：截止时间已过但市场仍开放，说明在等 UMA 提案或处于争议。" +
+       "这是最贴近「结果已经定了、价格还没走到 1」的场景，也最容易踩 <b>规则解释 / 争议延期 / 资金被锁</b>。",
+    C: "<b>③ 定价滞后候选</b>：60–90% 区间出现 24h 剧烈波动或明显价差。可能是消息刚出、盘口没跟上，也可能是有人在赌反转。",
+    D: "<b>全部</b>：当前板块下已加载的所有市场（隐藏过期超过 14 天的僵尸盘，以及价格已到 0.999 以上的无收益盘）。"
+  };
+  $("hint").innerHTML = "<span class=tag>" + esc(catName) + "</span>" + map[S.bucket];
+}
+
+function renderHead() {
+  $("thead").innerHTML = "<tr>" + COLS.map((c) => {
+    const on = S.sort.key === c.key;
+    const arrow = on ? (S.sort.dir > 0 ? "▲" : "▼") : "▲▼";
+    const sortable = c.sortable !== false;
+    return '<th class="' + (c.l ? "l " : "") + (on ? "sorted" : "") + '"' +
+      (sortable ? ' data-k="' + c.key + '"' : "") +
+      (c.hint ? ' title="' + esc(c.hint) + '"' : "") + ">" +
+      esc(c.label) + (sortable ? '<span class="ar">' + arrow + "</span>" : "") + "</th>";
+  }).join("") + "</tr>";
+}
+
+function probClass(p) { return p >= 0.90 ? "" : p >= 0.75 ? "mid" : "low"; }
+
+function renderBody() {
+  const rows = visibleRows();
+  const sliced = rows.slice(0, MAXROWS);
+  S.view = sliced;
+
+  const tbody = $("tbody");
+  const empty = $("empty");
+  const trunc = $("trunc");
+
+  if (!rows.length) {
+    tbody.innerHTML = "";
+    if ($("mcards")) $("mcards").innerHTML = "";
+    trunc.style.display = "none";
+    empty.style.display = "block";
+    empty.innerHTML = S.loading ? "加载中…" :
+      "<b>这个分组当前没有符合条件的市场。</b><br>" +
+      "可以试：换个板块、放宽到期窗口到 30 天、把最低流动性降到 500、把确定度下限调到 85%，或把剩余时间下限设为不限。<br>" +
+      "注意：已过期的盘如果价格还在 0.5 附近，说明它<b>真的还没定</b>，不会进 ① 桶。";
+    return;
+  }
+  empty.style.display = "none";
+
+  tbody.innerHTML = sliced.map((r, i) => {
+    const zhQ = hasZh(r.question) ? TR.mem.get(r.question) : null;
+    const chgTxt = (r.chg > 0 ? "+" : "") + (r.chg * 100).toFixed(1);
+    const chgCls = r.chg > 0.002 ? "color:var(--green)" : r.chg < -0.002 ? "color:var(--red)" : "color:var(--txt3)";
+    const annTxt = r.ann == null ? "—" : r.ann > 9999 ? "≥9999%" : Math.round(r.ann) + "%";
+    const annCls = r.ann == null ? "color:var(--txt3)" : r.ann >= 100 ? "color:var(--green)" : "color:var(--txt2)";
+    const sc = Math.round(r.score);
+    const scCls = sc >= 70 ? "hi" : sc >= 45 ? "mid" : "lo";
+    const tags = r.tags.slice(0, 3).map((t) => '<span class="chip ' + t[0] + '">' + esc(t[1]) + "</span>").join("");
+    let sub = "";
+    if (r.sub && r.sub !== r.favLabel) {
+      const raw = r.sub;
+      if (raw.length <= 52 && (r.question || "").toLowerCase().indexOf(raw.toLowerCase()) < 0) {
+        sub = TR.mem.get(raw) || raw;
+      }
+    }
+    const tip = zhQ ? r.question : (r.eventTitle || r.question);
+
+    return '<tr data-i="' + i + '">' +
+      '<td class="l" title="' + esc(tip) + '">' +
+        '<div class="q">' + esc(zhQ || r.question) + "</div>" +
+        '<div class="qmeta"><span class="m1">→ 被看好：<span class="fav">' + esc(zhOutcome(r.favLabel)) + "</span>" +
+          '<span class="ctag">' + esc(CAT_ZH[r.cat] || "其他") + "</span></span>" +
+          (sub ? '<span class="m2">· ' + esc(sub) + "</span>" : "") +
+        "</div></td>" +
+      '<td><span class="sc ' + scCls + '">' + sc + "</span></td>" +
+      '<td><div class="pbar"><span>' + (r.pFav * 100).toFixed(1) + "%</span>" +
+        '<i><u class="' + probClass(r.pFav) + '" style="width:' + Math.max(3, r.pFav * 100) + '%"></u></i></div></td>' +
+      '<td style="color:' + (r.daysLeft < 0 ? "var(--amber)" : "var(--txt2)") + '">' + esc(fmtLeft(r.daysLeft)) + "</td>" +
+      "<td>" + fmtPrice(r.cost) + "</td>" +
+      '<td style="color:var(--txt2)">' + r.yld.toFixed(2) + "%</td>" +
+      '<td style="' + annCls + '">' + annTxt + "</td>" +
+      '<td style="' + chgCls + '">' + chgTxt + "</td>" +
+      '<td style="color:' + (r.spread >= 0.03 ? "var(--red)" : r.spread >= 0.015 ? "var(--amber)" : "var(--txt3)") + '">' +
+        (r.spread * 100).toFixed(1) + "%</td>" +
+      "<td>" + fmtMoney(r.vol24) + "</td>" +
+      "<td>" + fmtMoney(r.liq) + "</td>" +
+      '<td class="l">' + tags + "</td></tr>";
+  }).join("");
+
+  if (rows.length > sliced.length) {
+    trunc.style.display = "block";
+    trunc.textContent = "共 " + rows.length + " 条，按当前排序只显示前 " + MAXROWS + " 条 —— 换排序或缩小筛选可以看更多。";
+  } else {
+    trunc.style.display = "none";
+  }
+
+  renderCards(sliced);
+}
+
+/* 手机端卡片流（宽屏不渲染，省性能） */
+function isNarrow() {
+  return !!(window.matchMedia && window.matchMedia("(max-width: 820px)").matches);
+}
+function renderCards(list) {
+  const box = $("mcards");
+  if (!box) return;
+  if (!isNarrow()) { box.innerHTML = ""; return; }
+  if (!list.length) { box.innerHTML = ""; return; }
+  box.innerHTML = list.map((r, i) => {
+    const zhQ = hasZh(r.question) ? TR.mem.get(r.question) : null;
+    let sub = "";
+    if (r.sub && r.sub !== r.favLabel) {
+      const raw = r.sub;
+      if (raw.length <= 52 && (r.question || "").toLowerCase().indexOf(raw.toLowerCase()) < 0) {
+        sub = TR.mem.get(raw) || raw;
+      }
+    }
+    const annTxt = r.ann == null ? "—" : (r.ann > 9999 ? "≥9999%" : Math.round(r.ann) + "%");
+    const annCls = r.ann == null ? "color:var(--txt3)" : r.ann >= 100 ? "color:var(--green)" : "color:var(--txt2)";
+    const tags = r.tags.slice(0, 2).map((t) => '<span class="chip ' + t[0] + '">' + esc(t[1]) + "</span>").join("");
+    const sc = Math.round(r.score);
+    const scCls = sc >= 70 ? "hi" : sc >= 45 ? "mid" : "lo";
+    return '<div class="mc" data-i="' + i + '">' +
+      '<div class="mcq">' + esc(zhQ || r.question) + "</div>" +
+      '<div class="mcm"><span>→ 被看好 <span class="fav">' + esc(zhOutcome(r.favLabel)) + "</span></span>" +
+        '<span class="ctag">' + esc(CAT_ZH[r.cat] || "其他") + "</span>" +
+        (sub ? "<span>" + esc(sub) + "</span>" : "") +
+        '<span class="sc ' + scCls + '" style="margin-left:auto">' + sc + "</span>" +
+      "</div>" +
+      '<div class="mcg">' +
+        "<div><u>确定度</u><b>" + (r.pFav * 100).toFixed(1) + "%</b></div>" +
+        "<div><u>剩余</u><b>" + esc(fmtLeft(r.daysLeft)) + "</b></div>" +
+        "<div><u>到期收益</u><b>" + r.yld.toFixed(2) + "%</b></div>" +
+        "<div><u>年化</u><b style=\"" + annCls + "\">" + annTxt + "</b></div>" +
+      "</div>" +
+      '<div class="mcf"><span>流动性 ' + fmtMoney(r.liq) + "</span>" +
+        '<span class="sp">|</span><span>价差 ' + (r.spread * 100).toFixed(1) + "%</span>" +
+        '<span class="sp">|</span><span>买价 ' + fmtPrice(r.cost) + "</span>" +
+        (tags ? '<span style="margin-left:auto">' + tags + "</span>" : "") +
+      "</div></div>";
+  }).join("");
+}
+
+/* =========================================================
+   交互
+   ========================================================= */
+document.addEventListener("click", (e) => {
+  const cat = e.target.closest(".cat");
+  if (cat) {
+    const k = cat.dataset.c;
+    S.cat = (S.cat === k) ? "all" : k;
+    S.current = null;
+    render();
+    kickTranslate();
+    return;
+  }
+  const tab = e.target.closest(".tab");
+  if (tab) {
+    S.bucket = tab.dataset.b;
+    S.sort = { key: "score", dir: -1 };
+    S.current = null;
+    try { history.replaceState(null, "", "#" + S.bucket); } catch (err) {}
+    render();
+    kickTranslate();
+    return;
+  }
+  const th = e.target.closest("th[data-k]");
+  if (th) {
+    const k = th.dataset.k;
+    if (S.sort.key === k) S.sort.dir *= -1;
+    else S.sort = { key: k, dir: k === "question" ? 1 : -1 };
+    renderHead();
+    renderBody();
+    return;
+  }
+  const mc = e.target.closest(".mc");
+  if (mc) {
+    const r = S.view[Number(mc.dataset.i)];
+    if (r) openModal(r);
+    return;
+  }
+  const tr = e.target.closest("#tbody tr");
+  if (tr) {
+    const r = S.view[Number(tr.dataset.i)];
+    if (r) openModal(r);
+    return;
+  }
+  if (e.target.id === "ov") closeModal();
+});
+
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+let _rsz = null;
+window.addEventListener("resize", () => {
+  clearTimeout(_rsz);
+  _rsz = setTimeout(() => { if (S.rows.length) renderBody(); }, 220);
+});
+
+$("btnRefresh").addEventListener("click", () => { loadData(); });
+$("fDays").addEventListener("change", (e) => { S.days = Number(e.target.value); loadData(); });
+$("fProb").addEventListener("change", (e) => { S.minProb = Number(e.target.value); render(); kickTranslate(); });
+$("fRemain").addEventListener("change", (e) => { S.minRemain = Number(e.target.value); render(); kickTranslate(); });
+$("fLiq").addEventListener("change", (e) => {
+  S.minLiq = Math.max(0, Number(e.target.value) || 0);
+  loadData();
+});
+$("fQ").addEventListener("input", (e) => { S.query = e.target.value; render(); kickTranslate(); });
+
+$("btnLang").addEventListener("click", () => {
+  TR.on = !TR.on;
+  const b = $("btnLang");
+  b.textContent = TR.on ? "中文" : "原文";
+  b.classList.toggle("on", TR.on);
+  render();
+  if (TR.on) { TR.off = false; TR.failed.clear(); TR.streak = 0; kickTranslate(); }
+});
+
+/* =========================================================
+   详情
+   ========================================================= */
+function openModal(r, silent) {
+  if (!silent) S.current = r;
+
+  const zhTitle = hasZh(r.question) ? TR.mem.get(r.question) : null;
+  const zhDesc = hasZh(r.desc) ? TR.mem.get(r.desc) : null;
+
+  const oRows = r.outcomes.map((o, i) => {
+    const win = i === r.favIdx;
+    return '<div class="oRow' + (win ? " win" : "") + '">' +
+      '<span class="' + (win ? "on" : "op") + '">' + esc(zhOutcome(o)) + (win ? " ★" : "") + "</span>" +
+      '<span class="op">' + (r.prices[i] * 100).toFixed(2) + "%</span></div>";
+  }).join("");
+
+  const warn = [];
+  if (r.cost >= 0.999) {
+    warn.push("<b>已经贴到 1.000：</b>没有剩余空间，买入只是把资金锁到结算，不产生收益。");
+  } else if (r.pFav >= 0.97) {
+    const n = Math.max(1, Math.round(1 / Math.max(0.0005, r.yld / 100) - 1));
+    warn.push("<b>赔率极低：</b>买入 " + fmtPrice(r.cost) + "，猜对只赚 " + r.yld.toFixed(1) +
+      "%，猜错亏 " + (r.cost * 100).toFixed(0) + "%。要连对约 " + n + " 次才抵得上一次错。");
+  }
+  if (r.spread >= 0.02) {
+    warn.push("<b>价差 " + (r.spread * 100).toFixed(1) + "%：</b>立刻买入再卖出就损失大半个价差，实际成本明显高于显示价格。");
+  }
+  if (r.liq < 20000) {
+    warn.push("<b>深度不足：</b>盘口挂单合计约 " + fmtMoney(r.liq) + " USDC，几百美元就可能把价格推走。");
+  }
+  if (r.disputed) warn.push("<b>UMA 已进入争议：</b>结算可能被推迟数天甚至改判，资金会被锁住，且结果可能反转。");
+  if (r.daysLeft != null && r.daysLeft < 0) {
+    warn.push("<b>已过截止时间：</b>「到期」≠「马上结算」。Polymarket 走 UMA 提案 + 挑战窗口，通常还要 2–48 小时，遇到争议可能拖数周。");
+  }
+  if (r.nOut > 2) {
+    warn.push("<b>多结果市场（" + r.nOut + " 个）：</b>「确定度」只是当前领先的那一个，不是二元是/否，别把 92% 当成快要定案。");
+  }
+  if (!r.tradeable) warn.push("<b>该市场当前不接受新订单</b>，只能观察。");
+  if (!warn.length) warn.push("暂无结构性风险标签，但仍需自行核对规则原文与结算来源。");
+
+  $("modal").innerHTML =
+    '<div class="mhead"><div>' +
+      "<h2>" + esc(zhTitle || r.question) + "</h2>" +
+      (zhTitle ? '<div class="en">' + esc(r.question) + "</div>" : "") +
+    "</div>" +
+    '<button class="x" id="mx" aria-label="关闭">×</button></div>' +
+    '<div class="mbody">' +
+      '<div class="grid">' +
+        cell("被看好的一方", esc(zhOutcome(r.favLabel))) +
+        cell("确定度", (r.pFav * 100).toFixed(1) + "%") +
+        cell("买入估算", fmtPrice(r.cost)) +
+        cell("到期归 1 毛收益", r.yld.toFixed(2) + "%") +
+        cell("年化（简单）", r.ann == null ? "—" : (r.ann > 9999 ? "≥9999%" : Math.round(r.ann) + "%")) +
+        cell("可操作分", String(Math.round(r.score))) +
+        cell("板块", esc(CAT_ZH[r.cat] || "其他")) +
+        cell("剩余 / 过期", esc(fmtLeft(r.daysLeft))) +
+        cell("截止时间", r.endDate ? esc(r.endDate.toLocaleString("zh-CN", { hour12: false })) : "—") +
+        cell("价差", (r.spread * 100).toFixed(2) + "%") +
+        cell("24h 成交", fmtMoney(r.vol24)) +
+        cell("流动性", fmtMoney(r.liq)) +
+        cell("累计成交", fmtMoney(r.volAll)) +
+      "</div>" +
+      '<div class="sect"><h4>各结果当前概率</h4><div class="oWrap">' + oRows + "</div></div>" +
+      '<div class="sect"><h4>结算状态（UMA）</h4><div class="desc" style="max-height:none">' +
+        esc(r.uma.length ? r.uma.join(" · ") : "暂无提案记录") + "</div></div>" +
+      '<div class="sect"><h4>风险检查</h4><div class="warnbox">' + warn.join("<br>") + "</div></div>" +
+      '<div class="sect"><h4>规则原文（赔付的唯一依据）' +
+        (zhDesc ? '<span class="tnote">机翻，以英文原版为准</span>' : "") +
+        "</h4><div class=\"desc\">" + esc(zhDesc || r.desc || "（无描述）") + "</div>" +
+        (zhDesc ? '<div class="desc" style="margin-top:8px;max-height:170px;opacity:.7">' + esc(r.desc) + "</div>" : "") +
+      "</div>" +
+      (r.resSrc ? '<div class="sect"><h4>官方结算来源</h4><div class="desc" style="max-height:none">' + esc(r.resSrc) + "</div></div>" : "") +
+      '<div class="acts">' +
+        '<a href="' + esc(r.link) + '" target="_blank" rel="noopener">↗ 在 Polymarket 打开</a>' +
+        (r.resSrc && /^https?:/.test(r.resSrc)
+          ? '<a href="' + esc(r.resSrc) + '" target="_blank" rel="noopener">↗ 结算数据源</a>' : "") +
+      "</div></div>";
+
+  $("ov").classList.add("on");
+  $("mx").addEventListener("click", closeModal);
+
+  if (TR.on && r.desc && !hasZh(r.desc) && r.desc.length < 1800) {
+    trBatch([r.desc]).then((out) => {
+      if (out && out[0]) {
+        TR.mem.set(r.desc, out[0]);
+        TR.save();
+        if (S.current === r) openModal(r, true);
+      }
+    }).catch(() => {});
+  }
+}
+
+function cell(k, v) {
+  return '<div class="cell"><div class="k">' + esc(k) + '</div><div class="v">' + v + "</div></div>";
+}
+function closeModal() { $("ov").classList.remove("on"); S.current = null; }
+
+/* =========================================================
+   CSV
+   ========================================================= */
+$("btnCsv").addEventListener("click", () => {
+  const rows = S.view || [];
+  if (!rows.length) { alert("当前视图没有数据可导出。"); return; }
+  const head = ["中文标题", "英文原题", "板块", "被看好的一方", "确定度", "结果数", "可操作分",
+    "剩余天数", "截止时间", "买入估算", "毛收益%", "年化%", "24h变化pp", "价差", "24h成交",
+    "流动性", "累计成交", "信号", "链接"];
+  const lines = [head.join(",")];
+  rows.forEach((r) => {
+    const cells = [
+      hasZh(r.question) ? TR.mem.get(r.question) : "",
+      r.question, CAT_ZH[r.cat] || "其他", r.favLabel, r.pFav.toFixed(4), r.nOut, Math.round(r.score),
+      r.daysLeft == null ? "" : r.daysLeft.toFixed(3),
+      r.endDate ? r.endDate.toISOString() : "",
+      r.cost.toFixed(4), r.yld.toFixed(2),
+      r.ann == null ? "" : r.ann.toFixed(1),
+      (r.chg * 100).toFixed(2), (r.spread * 100).toFixed(2),
+      r.vol24.toFixed(0), r.liq.toFixed(0), r.volAll.toFixed(0),
+      r.tags.map((t) => t[1]).join(" / "), r.link
+    ];
+    lines.push(cells.map((c) => {
+      const s = String(c == null ? "" : c);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }).join(","));
+  });
+  const blob = new Blob(["\ufeff" + lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "polymarket_near_expiry_" + new Date().toISOString().slice(0, 16).replace(/[:T]/g, "") + ".csv";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+});
+
+/* =========================================================
+   启动
+   ========================================================= */
+TR.load();
+const _h = (location.hash || "").replace("#", "").toUpperCase();
+if (["A", "B", "C", "D"].indexOf(_h) >= 0) S.bucket = _h;
+render();
+loadData();
+</script>
+</body>
+</html>
