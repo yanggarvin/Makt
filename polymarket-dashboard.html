@@ -242,6 +242,22 @@
   .rverdict{margin:10px 0 0;padding:7px 10px;border-radius:7px;font-size:10.5px;line-height:1.6;
     border:1px solid rgba(47,208,138,.25);background:rgba(47,208,138,.06);color:#a8e8c9}
   .rverdict.wait{border-color:rgba(255,176,32,.28);background:rgba(255,176,32,.06);color:#ffcf8a}
+  .chk{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--txt2);cursor:pointer;
+    height:36px;padding:0 12px;border:1px solid var(--line2);border-radius:7px;background:var(--panel);
+    white-space:nowrap;user-select:none;transition:.13s}
+  .chk:hover{border-color:var(--blue)}
+  .chk input{width:15px;height:15px;accent-color:#2fd08a;cursor:pointer;margin:0}
+  .chk.on{border-color:rgba(47,208,138,.5);background:rgba(47,208,138,.08);color:var(--green)}
+
+  .tstats{display:flex;gap:30px;flex-wrap:wrap}
+  .tstat .k{font-size:11px;color:var(--txt3);letter-spacing:.2px}
+  .tstat .v{font:600 22px var(--mono);margin-top:5px;line-height:1.1}
+  .tstat .v.g{color:var(--green)} .tstat .v.a{color:var(--amber)}
+  .tnote2{font-size:11px;color:var(--txt3);margin-top:11px;line-height:1.65;border-top:1px solid var(--line);
+    padding-top:10px}
+  .tbar{height:4px;background:var(--line2);border-radius:3px;overflow:hidden;margin-top:12px}
+  .tbar i{display:block;height:100%;background:var(--green);width:0;transition:width .4s}
+
   .copyrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   .copybtn{font:500 12px inherit;color:var(--txt2);background:var(--panel2);border:1px solid var(--line2);
     border-radius:7px;padding:8px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
@@ -318,6 +334,10 @@
     .rbox{padding:12px 13px}
     .rteam{min-height:46px;font-size:12px}
     .rstat{font-size:9px}
+    .chk{height:40px;font-size:12px;justify-content:center;flex:1 1 100%}
+    .tstats{gap:18px;justify-content:space-between}
+    .tstat{flex:1 1 0}
+    .tstat .v{font-size:19px}
     .copyrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
     .copybtn{justify-content:center;padding:12px 8px;font-size:12px;min-height:44px}
     .copybtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -390,6 +410,10 @@
           <option value="24">≥ 1 天</option>
         </select>
       </div>
+      <label class="chk" id="lblEnded">
+        <input type="checkbox" id="fEnded">
+        <span>只看已结束</span>
+      </label>
       <div class="fld">
         <label>搜索（中英文都行）</label>
         <input type="search" id="fQ" placeholder="如 比特币 / fed">
@@ -408,16 +432,23 @@
 <main class="wrap">
   <section class="kpis" id="kpis"></section>
 
+  <div class="panel" id="trackPanel" style="display:none">
+    <h3><span>兑现率追踪</span><em>自动记录「确定度 ≥90%」的市场，结算后核对结果</em></h3>
+    <div class="tstats" id="tstats"></div>
+    <div class="tbar"><i id="tbar"></i></div>
+    <div class="tnote2" id="tnote2"></div>
+  </div>
+
   <div class="catbar">
     <h3>
       <span>板块</span>
-      <em>点卡片只看这个板块，再点一次取消 · 数字 = 市场数，下面一行是「其中高确定数 / 中位年化」</em>
+      <em id="catHint">点卡片只看这个板块，再点一次取消 · 数字 = 市场数，下面一行是「其中高确定数 / 中位年化」</em>
     </h3>
     <div class="cats" id="cats"></div>
   </div>
 
   <div class="panel">
-    <h3><span>确定度分布</span><em>当前板块内、未过期市场中最可能结果的当前价格</em></h3>
+    <h3><span>确定度分布</span><em id="distTitle">当前板块内、未过期市场中最可能结果的当前价格</em></h3>
     <div class="bars" id="dist"></div>
   </div>
 
@@ -462,6 +493,8 @@ const PAGE = 100;
 const DAY = 86400000;
 const MAXROWS = 400;
 const TR_CACHE_KEY = "pm_tr_zh_v2";
+const ENDED_BUFFER_H = 3;      // 过期超过 3 小时 ＝ 赛事肯定结束了
+const TRACK_KEY = "pm_track_v2";
 
 const CATS = [
   { k: "sports",   zh: "体育" },
@@ -484,6 +517,7 @@ const S = {
   minRemain: 2,
   query: "",
   cat: "all",
+  endedOnly: false,
   raw: [],
   rows: [],
   view: [],
@@ -797,8 +831,133 @@ async function loadData() {
 
   const errTxt = S.errors.length ? "；" + S.errors.length + " 页失败（" + S.errors[0] + "）" : "";
   setProgress(1, "完成：" + pages + " 页 / " + S.rows.length + " 个市场" + errTxt, S.errors.length > 0);
+
+  if (TRACK.record(S.rows)) renderTrack();
   render();
   kickTranslate();
+
+  // 结算后的自动核对（后台进行，不阻塞）
+  TRACK.resolve(S.rows).then((n) => {
+    if (n) { renderTrack(); renderBody(); }
+  }).catch(() => {});
+}
+
+/* =========================================================
+   兑现率追踪（本地累积，结算后自动核对）
+   ========================================================= */
+const TRACK = {
+  items: {},
+  loaded: false,
+
+  load() {
+    try {
+      const raw = localStorage.getItem(TRACK_KEY);
+      if (raw) {
+        const o = JSON.parse(raw);
+        if (o && o.items) TRACK.items = o.items;
+      }
+    } catch (e) { TRACK.items = {}; }
+    TRACK.loaded = true;
+  },
+
+  save() {
+    try { localStorage.setItem(TRACK_KEY, JSON.stringify({ v: 2, items: TRACK.items })); }
+    catch (e) { /* 配额满就只保留内存 */ }
+  },
+
+  /* 把当前 ≥90% 的市场记进来 */
+  record(rows) {
+    let changed = false;
+    const n = Object.keys(TRACK.items).length;
+    if (n >= 600) return false;
+    for (const r of rows) {
+      if (r.pFav < 0.90) continue;
+      if (r.daysLeft == null || r.daysLeft < -14) continue;
+      if (TRACK.items[r.id]) continue;
+      if (Object.keys(TRACK.items).length >= 600) break;
+      TRACK.items[r.id] = {
+        q: r.question.slice(0, 120),
+        cat: r.cat,
+        p: +r.pFav.toFixed(4),
+        f: r.favIdx,
+        c: +r.cost.toFixed(4),
+        e: r.endDate ? r.endDate.toISOString() : null,
+        s: Date.now(),
+        d: 0                                   // 0 未结算 / 1 兑现 / 2 落空 / 3 查不到
+      };
+      changed = true;
+    }
+    if (changed) TRACK.save();
+    return changed;
+  },
+
+  stats() {
+    const all = Object.values(TRACK.items);
+    const done = all.filter((v) => v.d === 1 || v.d === 2);
+    const win = all.filter((v) => v.d === 1);
+    return {
+      tracked: all.length,
+      resolved: done.length,
+      win: win.length,
+      rate: done.length ? win.length / done.length : null,
+      pending: all.filter((v) => v.d === 0).length
+    };
+  },
+
+  /* 已从列表消失 + 已过截止时间的，逐个查最终结果 */
+  async resolve(rows) {
+    const present = new Set(rows.map((r) => r.id));
+    const now = Date.now();
+    const todo = Object.keys(TRACK.items).filter((id) => {
+      const v = TRACK.items[id];
+      if (v.d !== 0 || present.has(id)) return false;
+      if (!v.e) return false;
+      return Date.parse(v.e) + 2 * 3600e3 < now;      // 截止后 2 小时再查
+    }).slice(0, 10);
+
+    for (const id of todo) {
+      const v = TRACK.items[id];
+      try {
+        const m = await getJSON("https://gamma-api.polymarket.com/markets/" + id, 0);
+        const mm = Array.isArray(m) ? m[0] : m;
+        if (!mm || !mm.closed) continue;
+        const pr = JSON.parse(mm.outcomePrices || "[]").map(Number);
+        if (!pr.length) continue;
+        let wi = 0;
+        for (let i = 1; i < pr.length; i++) if (pr[i] > pr[wi]) wi = i;
+        v.d = (wi === v.f) ? 1 : 2;
+        v.w = wi;
+        v.fin = pr[wi];
+        TRACK.save();
+      } catch (e) {
+        if (String(e.message || e).indexOf("404") >= 0) { v.d = 3; TRACK.save(); }
+      }
+    }
+    return todo.length;
+  }
+};
+
+function renderTrack() {
+  const panel = $("trackPanel");
+  if (!panel) return;
+  const st = TRACK.stats();
+  if (!st.tracked) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+
+  const rateTxt = st.rate == null ? "—" : (st.rate * 100).toFixed(0) + "%";
+  $("tstats").innerHTML =
+    '<div class="tstat"><div class="k">跟踪中</div><div class="v">' + st.tracked + "</div></div>" +
+    '<div class="tstat"><div class="k">已结算</div><div class="v">' + st.resolved + "</div></div>" +
+    '<div class="tstat"><div class="k">兑现 / 落空</div><div class="v">' + st.win + " / " + (st.resolved - st.win) + "</div></div>" +
+    '<div class="tstat"><div class="k">高确定兑现率</div><div class="v ' +
+      (st.rate == null ? "" : st.rate >= 0.95 ? "g" : "a") + '">' + rateTxt + "</div></div>";
+
+  const pct = st.tracked ? Math.min(100, (st.resolved / Math.max(1, st.tracked)) * 100) : 0;
+  $("tbar").style.width = pct + "%";
+
+  $("tnote2").textContent = st.resolved < 5
+    ? "样本还太少（已结算 " + st.resolved + " 个），先不下结论。每打开一次看板就自动记录一批，通常 1–3 天后就有第一批真实结果。"
+    : "样本 " + st.resolved + " 个。这个数字来自「你实际看到的 ≥90% 市场」后续真实结算，不是估算。";
 }
 
 /* =========================================================
@@ -1142,6 +1301,9 @@ function bucketOf(r) {
 
 function baseFilter(r, ignoreCat) {
   if (!ignoreCat && S.cat !== "all" && r.cat !== S.cat) return false;
+  if (S.endedOnly) {
+    if (r.daysLeft == null || r.daysLeft * 24 > -ENDED_BUFFER_H) return false;
+  }
   if (r.daysLeft != null && r.daysLeft >= 0 && r.daysLeft * 24 < S.minRemain) return false;
   const q = S.query.trim().toLowerCase();
   if (q) {
@@ -1207,8 +1369,18 @@ function render() {
   $("ts").textContent = S.fetchedAt ? S.fetchedAt.toLocaleString("zh-CN", { hour12: false }) : "—";
   $("cov").textContent = S.rows.length ? S.rows.length + " 个" : "—";
   renderKpis();
+  renderTrack();
   renderCats();
   renderDist();
+  const catHint = $("catHint");
+  if (catHint) catHint.textContent = S.endedOnly
+    ? "点卡片只看这个板块，再点一次取消 · 数字 = 已结束市场数，下面一行是中位过期天数"
+    : "点卡片只看这个板块，再点一次取消 · 数字 = 市场数，下面一行是「其中高确定数 / 中位年化」";
+
+  const distLab = document.querySelector("#distTitle");
+  if (distLab) distLab.textContent = S.endedOnly
+    ? "已结束市场中，最可能结果的价格分布"
+    : "当前板块内、未过期市场中最可能结果的当前价格";
   renderTabs();
   renderHint();
   renderHead();
@@ -1225,6 +1397,33 @@ function renderKpis() {
   const deep = A.filter((r) => r.liq >= 50000).length;
   const thin = A.filter((r) => r.pFav >= 0.97).length;
   const scope = S.cat === "all" ? "" : "（" + CAT_ZH[S.cat] + "）";
+
+  if (S.endedOnly) {
+    const hi = rows.filter((r) => r.pFav >= 0.90).length;
+    const deep = rows.filter((r) => r.liq >= 50000).length;
+    const week = rows.filter((r) => r.daysLeft != null && r.daysLeft <= -7).length;
+    const od = rows.map((r) => -(r.daysLeft || 0)).sort((a, b) => a - b);
+    const medOd = od.length ? od[Math.floor(od.length / 2)] : null;
+    const both = rows.filter((r) => r.pFav >= 0.97 && r.liq >= 50000).length;
+    const endedCards = [
+      { k: "已结束 · 仍在交易" + scope, v: rows.length, cls: "amber",
+        n: "截止时间已过 ≥ " + ENDED_BUFFER_H + " 小时，赛事/事件确定结束" },
+      { k: "其中高确定 ≥90%", v: hi, cls: "green",
+        n: "价格已收敛，只差 UMA 结算这一步" },
+      { k: "≥97% 且能进场", v: both, cls: "violet",
+        n: "高确定 + 流动性 ≥5 万，真正可执行的" },
+      { k: "过期 ≥7 天", v: week, cls: "blue",
+        n: "拖得越久，资金占用成本越高" },
+      { k: "中位过期时长", v: medOd == null ? "—" : Math.round(medOd) + " 天", cls: "amber",
+        n: "这个数字越大，说明该板块结算越慢" }
+    ];
+    $("kpis").innerHTML = endedCards.map((c) =>
+      '<div class="kpi"><div class="k">' + esc(c.k) + '</div>' +
+      '<div class="v ' + c.cls + '">' + esc(String(c.v)) + '</div>' +
+      '<div class="n">' + esc(c.n) + '</div></div>'
+    ).join("");
+    return;
+  }
 
   const cards = [
     { k: "① 高确定 · 未到期" + scope, v: A.length, cls: "green", 
@@ -1278,10 +1477,37 @@ function renderCats() {
       return { k: c.k, zh: c.zh, n: p.n, a: p.a, med: med(p.anns) };
     }));
 
+  // 已结束模式：副标题改成「已结束数 / 中位过期」
+  const endedPer = {};
+  if (S.endedOnly) {
+    CATS.forEach((c) => { endedPer[c.k] = { n: 0, od: [] }; });
+    let allOd = [];
+    S.rows.forEach((r) => {
+      if (!baseFilter(r, true) || r.daysLeft == null || r.daysLeft * 24 > -ENDED_BUFFER_H) return;
+      const p = endedPer[r.cat];
+      if (p) { p.n++; p.od.push(-r.daysLeft); }
+      allOd.push(-r.daysLeft);
+    });
+    CATS.forEach((c) => {
+      const p = endedPer[c.k];
+      const s2 = p.od.sort((a, b) => a - b);
+      const cc = cards.find((x) => x.k === c.k);
+      if (cc) { cc.n = p.n; cc.a = s2.length ? Math.round(s2[Math.floor(s2.length / 2)]) : null; }
+    });
+    const allCard = cards.find((x) => x.k === "all");
+    if (allCard) {
+      allCard.n = allOd.length;
+      allOd.sort((a, b) => a - b);
+      allCard.a = allOd.length ? Math.round(allOd[Math.floor(allOd.length / 2)]) : null;
+    }
+  }
+
   $("cats").innerHTML = cards.map((c) => {
     const on = S.cat === c.k ? " on" : "";
     const z = c.n === 0 ? " zero" : "";
-    const sub = "高确定 " + c.a + (c.med == null ? "" : " · 年化 " + Math.round(c.med) + "%");
+    const sub = S.endedOnly
+      ? (c.a == null ? "—" : "中位过期 " + c.a + " 天")
+      : "高确定 " + c.a + (c.med == null ? "" : " · 年化 " + Math.round(c.med) + "%");
     return '<button class="cat' + on + z + '" data-c="' + c.k + '" title="点击只看「' + esc(c.zh) + '」">' +
       '<span class="cn">' + esc(c.zh) + "<b>" + c.n + "</b></span>" +
       '<span class="cs">' + esc(sub) + "</span></button>";
@@ -1294,7 +1520,8 @@ function renderDist() {
   const counts = new Array(8).fill(0);
   S.rows.forEach((r) => {
     if (!baseFilter(r)) return;
-    if (r.daysLeft == null || r.daysLeft < 0) return;
+    if (r.daysLeft == null) return;
+    if (!S.endedOnly && r.daysLeft < 0) return;
     for (let i = 0; i < 8; i++) {
       if (r.pFav >= edges[i] && r.pFav < edges[i + 1]) { counts[i]++; break; }
     }
@@ -1333,7 +1560,10 @@ function renderHint() {
     C: "<b>③ 定价滞后候选</b>：60–90% 区间出现 24h 剧烈波动或明显价差。可能是消息刚出、盘口没跟上，也可能是有人在赌反转。",
     D: "<b>全部</b>：当前板块下已加载的所有市场（隐藏过期超过 14 天的僵尸盘，以及价格已到 0.999 以上的无收益盘）。"
   };
-  $("hint").innerHTML = "<span class=tag>" + esc(catName) + "</span>" + map[S.bucket];
+  const endedTag = S.endedOnly
+    ? '<span class=tag style="border-color:rgba(47,208,138,.5);color:var(--green)">仅已结束 ≥' + ENDED_BUFFER_H + ' 小时</span>'
+    : "";
+  $("hint").innerHTML = endedTag + "<span class=tag>" + esc(catName) + "</span>" + map[S.bucket];
 }
 
 function renderHead() {
@@ -1530,6 +1760,14 @@ $("fLiq").addEventListener("change", (e) => {
   loadData();
 });
 $("fQ").addEventListener("input", (e) => { S.query = e.target.value; render(); kickTranslate(); });
+
+$("fEnded").addEventListener("change", (e) => {
+  S.endedOnly = e.target.checked;
+  $("lblEnded").classList.toggle("on", S.endedOnly);
+  if (S.endedOnly && (S.bucket === "A" || S.bucket === "C")) S.bucket = "B";
+  render();
+  kickTranslate();
+});
 
 $("btnLang").addEventListener("click", () => {
   TR.on = !TR.on;
@@ -1767,6 +2005,7 @@ $("btnCsv").addEventListener("click", () => {
    启动
    ========================================================= */
 TR.load();
+TRACK.load();
 const _h = (location.hash || "").replace("#", "").toUpperCase();
 if (["A", "B", "C", "D"].indexOf(_h) >= 0) S.bucket = _h;
 render();
