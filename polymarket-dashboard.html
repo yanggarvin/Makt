@@ -209,6 +209,52 @@
   .warnbox b{color:var(--amber)}
   .tnote{font-size:10.5px;color:var(--txt3);margin-left:8px;font-weight:400;letter-spacing:0}
 
+  /* ---- 结果 × 盘口 模块 ---- */
+  .rmod{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;align-items:start}
+  .rbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 14px;min-width:0}
+  .rbox h5{margin:0 0 11px;font-size:10.5px;color:var(--txt3);letter-spacing:.4px;font-weight:600;
+    display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .rstat{font:600 9.5px var(--mono);padding:2px 7px;border-radius:4px;border:1px solid;white-space:nowrap}
+  .rstat.ok{color:#7ef0bb;border-color:rgba(47,208,138,.45);background:rgba(47,208,138,.12)}
+  .rstat.wait{color:#ffd07a;border-color:rgba(255,176,32,.45);background:rgba(255,176,32,.12)}
+  .rstat.live{color:#9ccbff;border-color:rgba(77,157,255,.45);background:rgba(77,157,255,.12)}
+  .rvs{display:grid;grid-template-columns:1fr 26px 1fr;gap:6px;align-items:center;text-align:center}
+  .rteam{font-size:12.5px;font-weight:600;padding:8px 6px;border-radius:8px;background:var(--bg2);
+    border:1px solid var(--line);line-height:1.3;min-height:50px;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;gap:3px;color:var(--txt2);word-break:break-word;overflow-wrap:anywhere}
+  .rteam.win{background:rgba(47,208,138,.1);border-color:rgba(47,208,138,.45);color:#ddf6ea}
+  .rteam.lose{opacity:.45}
+  .rteam b{font:600 9px var(--mono);color:#7ef0bb;border:1px solid rgba(47,208,138,.4);
+    border-radius:4px;padding:0 5px;letter-spacing:.4px}
+  .rvs .vsx{font:600 9.5px var(--mono);color:var(--txt3)}
+  .rmeta{font-size:10.5px;color:var(--txt3);margin-top:10px;line-height:1.6}
+  .rmeta b{color:var(--amber);font-weight:600}
+  .rnote{font-size:10.5px;color:var(--txt3);margin-top:5px;line-height:1.6}
+  .rnote a{color:var(--blue)}
+  svg.spark{display:block;width:100%;height:50px;margin:0 0 8px}
+  table.cmp{width:100%;border-collapse:collapse;font-size:11.5px}
+  table.cmp td{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+  table.cmp tr:last-child td{border-bottom:0}
+  table.cmp td:first-child{color:var(--txt3);width:48%}
+  table.cmp td:last-child{text-align:right;font-family:var(--mono);color:var(--txt)}
+  table.cmp td.ok{color:var(--green)} table.cmp td.warn{color:var(--amber)}
+  table.cmp td.muted{color:var(--txt2)}
+  .rverdict{margin:10px 0 0;padding:7px 10px;border-radius:7px;font-size:10.5px;line-height:1.6;
+    border:1px solid rgba(47,208,138,.25);background:rgba(47,208,138,.06);color:#a8e8c9}
+  .rverdict.wait{border-color:rgba(255,176,32,.28);background:rgba(255,176,32,.06);color:#ffcf8a}
+  .copyrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .copybtn{font:500 12px inherit;color:var(--txt2);background:var(--panel2);border:1px solid var(--line2);
+    border-radius:7px;padding:8px 13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+    font-family:inherit;transition:.13s}
+  .copybtn:hover{border-color:var(--blue);color:var(--txt)}
+  .copybtn.primary{background:rgba(47,208,138,.14);border-color:rgba(47,208,138,.5);color:var(--green);font-weight:600}
+  .copybtn svg{width:13px;height:13px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;
+    stroke-linecap:round;stroke-linejoin:round}
+  .toastbox{position:fixed;left:50%;bottom:34px;transform:translate(-50%,20px);background:var(--panel2);
+    border:1px solid rgba(47,208,138,.5);color:#7ef0bb;font-size:12.5px;padding:10px 18px;border-radius:9px;
+    box-shadow:0 14px 44px rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:.22s;z-index:80}
+  .toastbox.on{opacity:1;transform:translate(-50%,0)}
+
   footer{border-top:1px solid var(--line);margin-top:36px;padding:20px 0;font-size:11.5px;color:var(--txt3);line-height:1.85}
   footer b{color:var(--txt2)}
   code{font-family:var(--mono);font-size:11px;background:var(--panel);padding:1px 5px;border-radius:4px}
@@ -263,9 +309,19 @@
 
     /* 表格隐藏，改用卡片流 */
     .tw{background:transparent;border:0;overflow:visible;max-height:none;border-radius:0}
-    table{display:none}
+    .tw table{display:none}
+    table.cmp{display:table}
     .mcards{display:flex}
     .trunc{background:var(--panel);border:1px solid var(--line);border-radius:9px;margin-top:9px}
+
+    .rmod{grid-template-columns:1fr;gap:10px;margin-bottom:14px}
+    .rbox{padding:12px 13px}
+    .rteam{min-height:46px;font-size:12px}
+    .rstat{font-size:9px}
+    .copyrow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+    .copybtn{justify-content:center;padding:12px 8px;font-size:12px;min-height:44px}
+    .copybtn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    svg.spark{height:56px}
 
     .ov{padding:0}
     .modal{max-width:100%;border-radius:0;border:0;min-height:100vh}
@@ -807,6 +863,9 @@ function parseMarket(m) {
   if (!Array.isArray(uma)) uma = [];
   const disputed = uma.some((u) => String(u).toLowerCase().indexOf("disput") >= 0);
 
+  let tokens = [];
+  try { tokens = JSON.parse(m.clobTokenIds || "[]"); } catch (e) { tokens = []; }
+
   const liq = num(m.liquidityNum != null ? m.liquidityNum : m.liquidity);
   const vol24 = num(m.volume24hr != null ? m.volume24hr : m.volume24hrClob);
   const volAll = num(m.volumeNum != null ? m.volumeNum : m.volume);
@@ -851,6 +910,10 @@ function parseMarket(m) {
     tradeable: tradeable,
     uma: uma,
     disputed: disputed,
+    closed: !!m.closed,
+    closedTime: m.closedTime || null,
+    tokens: Array.isArray(tokens) ? tokens : [],
+    sportType: m.sportsMarketType || null,
     desc: m.description || "",
     resSrc: m.resolutionSource || "",
     cat: catOf(m, ev),
@@ -877,6 +940,192 @@ function scoreOf(r) {
   const spr = clamp01(1 - r.spread / 0.03);
   const yld = r.ann == null ? 0.3 : clamp01((Math.log10(Math.max(1, r.ann)) - 1) / 2);
   return 100 * (0.35 * prob + 0.25 * time + 0.20 * liq + 0.10 * spr + 0.10 * yld);
+}
+
+/* =========================================================
+   结果 × 盘口对比（新增）
+   ========================================================= */
+const HIST = { mem: new Map(), inflight: new Set() };
+
+async function fetchHist(token) {
+  if (!token) return [];
+  if (HIST.mem.has(token)) return HIST.mem.get(token);
+  if (HIST.inflight.has(token)) return null;
+  HIST.inflight.add(token);
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  try {
+    const u = "https://clob.polymarket.com/prices-history?" +
+      new URLSearchParams({ market: token, interval: "max", fidelity: "60" });
+    const r = await fetch(u, { signal: ctl.signal });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    const pts = (j.history || []).map((p) => [p.t, p.p]).filter((p) => Number.isFinite(p[1]));
+    HIST.mem.set(token, pts);
+    return pts;
+  } catch (e) {
+    HIST.mem.set(token, []);
+    return [];
+  } finally {
+    clearTimeout(timer);
+    HIST.inflight.delete(token);
+  }
+}
+
+function sparkSVG(pts) {
+  if (!pts || pts.length < 3) {
+    return '<div style="height:50px;display:flex;align-items:center;justify-content:center;' +
+      'font-size:10.5px;color:var(--txt3)">暂无足够的历史成交数据</div>';
+  }
+  const w = 396, h = 50, pad = 4;
+  const seg = pts.slice(-60);
+  const ps = seg.map((p) => p[1]);
+  let lo = Math.min(...ps), hi = Math.max(...ps);
+  if (hi - lo < 1e-6) { lo = Math.max(0, lo - 0.01); hi = Math.min(1, hi + 0.01); }
+  const n = seg.length;
+  const co = seg.map((p, i) => {
+    const x = pad + (w - 2 * pad) * i / (n - 1);
+    const y = h - pad - (h - 2 * pad) * (p[1] - lo) / (hi - lo);
+    return x.toFixed(1) + "," + y.toFixed(1);
+  }).join(" ");
+  const last = co.split(" ").pop().split(",");
+  return '<svg class="spark" viewBox="0 0 ' + w + " " + h + '" preserveAspectRatio="none">' +
+    '<polyline points="' + co + '" fill="none" stroke="#2fd08a" stroke-width="1.8" ' +
+    'stroke-linejoin="round" stroke-linecap="round" opacity=".9"/>' +
+    '<circle cx="' + last[0] + '" cy="' + last[1] + '" r="2.6" fill="#2fd08a"/></svg>';
+}
+
+/* 从题目里抽对阵双方（用于「查比分」） */
+function matchLabel(r) {
+  const o = r.outcomes;
+  const isYN = o.length === 2 && o.every((x) => /^(yes|no)$/i.test(x));
+  if (o.length === 2 && !isYN) return o[0] + " vs " + o[1];
+  const q = (r.question || "").replace(/\?$/, "");
+  const m = q.match(/(.+?)\s+vs\.?\s+(.+?)(?:\s*\(|\s*[-–—]|$)/i);
+  if (m) return m[1].replace(/^will\s+/i, "").trim() + " vs " + m[2].trim();
+  return "";
+}
+
+function overdueText(d) {
+  const n = -d;
+  if (n < 1 / 24) return Math.max(1, Math.round(n * 1440)) + " 分钟";
+  if (n < 1) return Math.round(n * 24) + " 小时";
+  return Math.round(n) + " 天";
+}
+
+function isYN(r) {
+  return r.outcomes.length === 2 && r.outcomes.every((x) => /^(yes|no)$/i.test(x));
+}
+
+function statusOf(r) {
+  if (r.closed) return ["ok", "已结算"];
+  if (r.daysLeft != null && r.daysLeft < 0) return ["wait", "待结算"];
+  return ["live", "进行中"];
+}
+
+function fmtUT(ts) {
+  const d = new Date(ts * 1000);
+  const p = (n) => String(n).padStart(2, "0");
+  return (d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+function sidesHTML(r) {
+  const o = r.outcomes;
+  const st = statusOf(r)[0];
+  if (o.length !== 2) {
+    return '<div class="rvs" style="grid-template-columns:1fr">' +
+      '<div class="rteam win"><span>' + esc(zhOutcome(r.favLabel)) + "</span><b>领先</b></div></div>";
+  }
+  const winIdx = (st === "ok" && !isYN(r)) ? r.favIdx : -1;
+  return '<div class="rvs">' +
+    o.map((name, i) => {
+      const cls = winIdx === -1 ? "" : (i === winIdx ? "win" : "lose");
+      const badge = winIdx === -1 ? "" : "<b>" + (i === winIdx ? "胜" : "负") + "</b>";
+      return (i === 1 ? '<div class="vsx">VS</div>' : "") +
+        '<div class="rteam ' + cls + '"><span>' + esc(zhOutcome(name)) + "</span>" + badge + "</div>";
+    }).join("") + "</div>";
+}
+
+function cmpRowsHTML(r, pts) {
+  const st = statusOf(r)[0];
+  const favZh = esc(zhOutcome(r.favLabel));
+
+  if (st === "ok") {
+    let pre = null;
+    if (pts && pts.length) {
+      const cand = pts.filter((q) => q[1] > 0.02 && q[1] < 0.98);
+      if (cand.length) pre = cand[cand.length - 1];
+    }
+    const ct = r.closedTime ? new Date(r.closedTime).getTime() / 1000 : null;
+    let hrsTxt = "";
+    if (pre && ct) {
+      const hrs = Math.max(0.1, (ct - pre[0]) / 3600);
+      hrsTxt = "结算前 " + (hrs < 1 ? Math.round(hrs * 60) + " 分钟" : hrs.toFixed(1) + " 小时");
+    }
+    const fav = r.favLabel;
+    const rows = [];
+    if (pre) rows.push([hrsTxt || "结算前最后报价", favZh + " <b>" + (pre[1] * 100).toFixed(1) + "%</b>", ""]);
+    rows.push(["最后成交价", favZh + " " + fmtPrice(r.prices[r.favIdx]), "muted"]);
+    rows.push(["实际结果", "<b>" + esc(zhOutcome(fav)) + (isYN(r) ? "" : " 胜") + "</b>", "ok"]);
+    rows.push(["判定", "<b>已结算</b>", "ok"]);
+    return { rows: rows, verdict: "结算价已收敛到 1.00，市场定价被结果验证。", vcls: "" };
+  }
+
+  // 未结算
+  const rows = [
+    ["当前盘口", favZh + " <b>" + (r.pFav * 100).toFixed(1) + "%</b>", ""],
+    ["买价估算", fmtPrice(r.cost) + "（含半价差）", "muted"],
+    ["到期收益", "<b>+" + r.yld.toFixed(2) + "%</b>", "ok"],
+    ["结算状态", r.daysLeft != null && r.daysLeft < 0
+      ? '已过期 <b>' + overdueText(r.daysLeft) + "</b>，等 UMA"
+      : "未到期", "warn"],
+  ];
+  const v = (r.daysLeft != null && r.daysLeft < 0)
+    ? "没结算 ≠ 没结果。若事件已结束，这就是「结果已定、盘口还没走到位」的典型形态——但必须自己确认。"
+    : "市场仍在进行，价格会继续变化。";
+  return { rows: rows, verdict: v, vcls: "wait" };
+}
+
+function resultModule(r) {
+  const [cls, txt] = statusOf(r);
+  const label = matchLabel(r);
+  const isSport = r.cat === "sports" || !!r.sportType;
+  const searchUrl = "https://www.google.com/search?q=" +
+    encodeURIComponent((label || r.question) + " 比分 结果");
+
+  const mparts = [];
+  if (r.closedTime) mparts.push("结算 " + new Date(r.closedTime).toLocaleString("zh-CN", { hour12: false }));
+  else if (r.endDate) mparts.push("截止 " + r.endDate.toLocaleString("zh-CN", { hour12: false }));
+  if (r.daysLeft != null && r.daysLeft < 0 && !r.closed) {
+    mparts.push("已过期 <b>" + overdueText(r.daysLeft) + "</b>");
+  }
+  mparts.push("累计成交 " + fmtMoney(r.volAll));
+  if (r.uma.length) mparts.push("UMA " + r.uma.length + " 条记录");
+
+  const note = isSport
+    ? 'Polymarket 不提供比分 · <a href="' + esc(searchUrl) + '" target="_blank" rel="noopener">去查这场 →</a>'
+    : "非体育类同样展示「结果 × 盘口」，无需额外数据源";
+
+  const favTok = (r.tokens && (r.tokens[r.favIdx] || r.tokens[0])) || "";
+  const c = cmpRowsHTML(r, HIST.mem.get(favTok) || null);
+  const rowsHTML = c.rows.map((x) =>
+    "<tr><td>" + x[0] + '</td><td class="' + x[2] + '">' + x[1] + "</td></tr>").join("");
+  const spark = HIST.mem.has(favTok) ? sparkSVG(HIST.mem.get(favTok))
+    : '<div style="height:50px;display:flex;align-items:center;justify-content:center;' +
+      'font-size:10.5px;color:var(--txt3)">加载历史价格…</div>';
+
+  return '<div class="rmod">' +
+    '<div class="rbox"><h5><span>比赛结果 / 市场结果</span>' +
+      '<span class="rstat ' + cls + '">' + txt + "</span></h5>" +
+      sidesHTML(r) +
+      '<div class="rmeta">' + mparts.join(" · ") + "</div>" +
+      '<div class="rnote">' + note + "</div></div>" +
+    '<div class="rbox"><h5><span>盘口对比</span>' +
+      '<span class="rstat live" style="border:0;background:none;color:var(--txt3)">PRICE vs RESULT</span></h5>' +
+      '<div id="spk-' + esc(r.id) + '">' + spark + "</div>" +
+      '<table class="cmp" id="cmp-' + esc(r.id) + '">' + rowsHTML + "</table>" +
+      '<div class="rverdict ' + c.vcls + '">' + c.verdict + "</div></div>" +
+    "</div>";
 }
 
 /* =========================================================
@@ -1292,6 +1541,57 @@ $("btnLang").addEventListener("click", () => {
 });
 
 /* =========================================================
+   复制 / 提示
+   ========================================================= */
+const IC = {
+  copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>',
+  open: '<svg viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M19 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"/></svg>',
+  search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>'
+};
+
+function showToast(msg) {
+  let el = document.getElementById("toastbox");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "toastbox"; el.className = "toastbox";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add("on");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("on"), 1900);
+}
+
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* 落到下面的兜底 */ }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) { return false; }
+}
+
+function buyOrderText(r) {
+  const when = r.closed
+    ? "已结算 " + (r.closedTime ? new Date(r.closedTime).toLocaleString("zh-CN", { hour12: false }) : "")
+    : (r.endDate ? "截止 " + r.endDate.toLocaleString("zh-CN", { hour12: false }) : "");
+  return zhOutcome(r.favLabel) + " @" + fmtPrice(r.cost) +
+    "  " + (r.pFav * 100).toFixed(1) + "%  " + when + "\n" + r.link;
+}
+
+/* =========================================================
    详情
    ========================================================= */
 function openModal(r, silent) {
@@ -1331,13 +1631,26 @@ function openModal(r, silent) {
   if (!r.tradeable) warn.push("<b>该市场当前不接受新订单</b>，只能观察。");
   if (!warn.length) warn.push("暂无结构性风险标签，但仍需自行核对规则原文与结算来源。");
 
+  const resHTML = resultModule(r);
+  const label = matchLabel(r);
+  const sportSearch = "https://www.google.com/search?q=" +
+    encodeURIComponent((label || r.question) + " 比分 结果");
+
   $("modal").innerHTML =
     '<div class="mhead"><div>' +
       "<h2>" + esc(zhTitle || r.question) + "</h2>" +
       (zhTitle ? '<div class="en">' + esc(r.question) + "</div>" : "") +
     "</div>" +
     '<button class="x" id="mx" aria-label="关闭">×</button></div>' +
-    '<div class="mbody">' +
+    '<div class="mbody">' + resHTML +
+      '<div class="copyrow">' +
+        '<button class="copybtn primary" data-copy="link">' + IC.copy + '<span>复制链接</span></button>' +
+        '<button class="copybtn" data-copy="order">' + IC.copy + '<span>复制买入单</span></button>' +
+        '<a class="copybtn" href="' + esc(r.link) + '" target="_blank" rel="noopener">' + IC.open + '<span>打开</span></a>' +
+        (r.cat === "sports" || r.sportType
+          ? '<a class="copybtn" href="' + esc(sportSearch) + '" target="_blank" rel="noopener">' + IC.search + '<span>查比分</span></a>'
+          : "") +
+      "</div>" +
       '<div class="grid">' +
         cell("被看好的一方", esc(zhOutcome(r.favLabel))) +
         cell("确定度", (r.pFav * 100).toFixed(1) + "%") +
@@ -1371,6 +1684,33 @@ function openModal(r, silent) {
 
   $("ov").classList.add("on");
   $("mx").addEventListener("click", closeModal);
+
+  const linkBtn = $("modal").querySelector('[data-copy="link"]');
+  if (linkBtn) linkBtn.addEventListener("click", async () => {
+    const ok = await copyText(r.link);
+    showToast(ok ? "✓ 市场链接已复制" : "复制失败，请手动选择链接");
+  });
+  const orderBtn = $("modal").querySelector('[data-copy="order"]');
+  if (orderBtn) orderBtn.addEventListener("click", async () => {
+    const ok = await copyText(buyOrderText(r));
+    showToast(ok ? "✓ 买入单已复制" : "复制失败，请手动选择");
+  });
+
+  // 历史价格：先出骨架，拿到后只替换图表与对比行
+  const tk = r.tokens && (r.tokens[r.favIdx] || r.tokens[0]);
+  if (tk && !HIST.mem.has(tk)) {
+    fetchHist(tk).then((pts) => {
+      if (!S.current || S.current.id !== r.id) return;
+      const sp = document.getElementById("spk-" + r.id);
+      if (sp) sp.innerHTML = sparkSVG(pts);
+      const cm = document.getElementById("cmp-" + r.id);
+      if (cm) {
+        const c = cmpRowsHTML(r, pts);
+        cm.innerHTML = c.rows.map((x) =>
+          "<tr><td>" + x[0] + '</td><td class="' + x[2] + '">' + x[1] + "</td></tr>").join("");
+      }
+    });
+  }
 
   if (TR.on && r.desc && !hasZh(r.desc) && r.desc.length < 1800) {
     trBatch([r.desc]).then((out) => {
